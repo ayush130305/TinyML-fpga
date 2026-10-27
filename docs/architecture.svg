@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 780" width="1240" height="780" role="img" aria-label="tinyml-fpga architecture" xmlns:c2pa="http://c2pa.org/manifest"><metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYTo1MWE3MDFhZi03NDY1LTQ4ZmItYjQyYy1mNWFhNTg2NGJhODcAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaAofH82R3wZLhS7cwmg94YoAAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDpkZjY2ODI0OC1iYmEyLTQ1ZjktODA4YS1kY2QzM2RkMjJjMWVscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNouDe2zLQFB2FLelBUjQgK4gAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFggX/oBfu+sD6qOC0UVO6MAprXW1zplxoawg8EgV1gGJ7CkZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaJzi+Jr5IHLsdIOwKnOHfq8AAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRNAAAAAAAAAAAAAAAAAGRoYXNoWCBFI8sZ+I/siyjAWVo7TIEtAaOY5GJ9G34ZN43JrUp65GRuYW1lbmp1bWJmIG1hbmlmZXN0amV4Y2x1c2lvbnOBomVzdGFydBjJZmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOjUxYTcwMWFmLTc0NjUtNDhmYi1iNDJjLWY1YWE1ODY0YmE4Ny9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOjkxNGIyNzE4LWIxZjMtNDRmMi04ZmNiLTJkMDM3NTg1MzUzMnJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCBf+gF+76wPqo4LRRU7owCmtdbXOmXGhrCDwSBXWAYnsKJjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFggdehpAOLRzE0lcJtFP7s3PVMR+R1RyowbtC2WIKfXcG2iY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFggE7odoLfocxLatqS1T1zv7OZav0Cy3hNxw5ev/5HaUyN0Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQBVK5IQ4gIlIGyp6pyq63yKq3pBeagb5kBXOKzAydQWIX8CmIi2xYZux6tFGJTgsq34p/Cvwzm9Iyrc5PTS8Lac=</c2pa:manifest></metadata>
+<style>
+:root{--bg:#ffffff;--ink:#0f172a;--mut:#64748b;--line:#cbd5e1;--panel:#f8fafc;--acc:#0f766e;--accs:#ecfdf5;--box:#ffffff}
+@media (prefers-color-scheme: dark){:root{--bg:#0b1118;--ink:#e2e8f0;--mut:#94a3b8;--line:#334155;--panel:#0f1720;--acc:#2dd4bf;--accs:#0d2a28;--box:#111b26}}
+svg{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.bg{fill:var(--bg)} .panel{fill:var(--panel);stroke:var(--line);stroke-width:1}
+.panela{fill:var(--accs);stroke:var(--acc);stroke-width:1.2}
+.box{fill:var(--box);stroke:var(--line);stroke-width:1.2}
+.boxa{fill:var(--box);stroke:var(--acc);stroke-width:1.6}
+.t{fill:var(--ink);font-size:13px}
+.title{fill:var(--ink);font-size:24px;font-weight:700;letter-spacing:-0.3px}
+.sub{fill:var(--mut);font-size:13px}
+.zl{fill:var(--mut);font-size:11px;font-weight:700;letter-spacing:1.4px}
+.zla{fill:var(--acc);font-size:11px;font-weight:700;letter-spacing:1.4px}
+.bt{fill:var(--ink);font-size:14px;font-weight:600}
+.st{fill:var(--mut);font-size:12px}
+.stm{fill:var(--mut);font-size:11.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.mono{fill:var(--ink);font-size:17px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.acc{fill:var(--acc);font-size:12px;font-weight:600}
+.ar{stroke:var(--mut);stroke-width:1.6;fill:none}
+.ar.dash{stroke-dasharray:5 4}
+.bus{stroke:var(--acc);stroke-width:2.4}
+.chip{fill:var(--box);stroke:var(--line);stroke-width:1}
+.chipa{fill:var(--accs);stroke:var(--acc);stroke-width:1}
+</style>
+<defs><marker id="h" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9 z" fill="#64748b"/></marker><marker id="hs" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M9 1 L1 5 L9 9 z" fill="#64748b"/></marker></defs>
+<rect class="bg" width="1240" height="780"/>
+<text x="40" y="52" class="title" text-anchor="start">tinyml-fpga</text>
+<text x="40" y="76" class="sub" text-anchor="start">int8 TFLite models on any FPGA  ·  one primitive, three layer types, any link</text>
+<rect x="30" y="112" width="260" height="500" rx="12" class="panel"/>
+<rect x="330" y="112" width="440" height="500" rx="12" class="panel"/>
+<rect x="870" y="112" width="340" height="500" rx="12" class="panela"/>
+<text x="46" y="136" class="zl" text-anchor="start">1  TRAIN + CONVERT  ·  PC</text>
+<text x="346" y="136" class="zl" text-anchor="start">2  HOST RUNTIME  ·  PC or MCU</text>
+<text x="886" y="136" class="zla" text-anchor="start">3  FPGA FABRIC  ·  PLAIN VERILOG</text>
+<rect x="46" y="154" width="228" height="54" rx="8" class="box"/>
+<text x="160" y="174" class="bt" text-anchor="middle">Train</text>
+<text x="160" y="192" class="st" text-anchor="middle">TensorFlow / Keras, int8 quantised</text>
+<rect x="46" y="228" width="228" height="54" rx="8" class="box"/>
+<text x="160" y="248" class="bt" text-anchor="middle">model.tflite</text>
+<text x="160" y="266" class="st" text-anchor="middle">int8 in, int8 out</text>
+<rect x="46" y="302" width="228" height="62" rx="8" class="box"/>
+<text x="160" y="326" class="bt" text-anchor="middle">converter</text>
+<text x="160" y="344" class="stm" text-anchor="middle">python -m tinyml_fpga convert</text>
+<rect x="46" y="384" width="228" height="62" rx="8" class="box"/>
+<text x="160" y="408" class="bt" text-anchor="middle">model.tmf</text>
+<text x="160" y="426" class="st" text-anchor="middle">TMF1 · JSON header · int8 blob</text>
+<rect x="46" y="466" width="228" height="62" rx="8" class="boxa"/>
+<text x="160" y="482" class="bt" text-anchor="middle">check</text>
+<text x="160" y="500" class="st" text-anchor="middle">bit-exact vs LiteRT,</text>
+<text x="160" y="515" class="st" text-anchor="middle">every tensor</text>
+<line x1="160" y1="208" x2="160" y2="228" class="ar" marker-end="url(#h)"/>
+<line x1="160" y1="282" x2="160" y2="302" class="ar" marker-end="url(#h)"/>
+<line x1="160" y1="364" x2="160" y2="384" class="ar" marker-end="url(#h)"/>
+<line x1="160" y1="446" x2="160" y2="466" class="ar" marker-end="url(#h)"/>
+<text x="160" y="560" class="st" text-anchor="middle">examples/digits</text>
+<text x="160" y="578" class="st" text-anchor="middle">examples/imu_motion</text>
+<rect x="346" y="154" width="408" height="64" rx="8" class="box"/>
+<text x="550" y="171" class="bt" text-anchor="middle">Model  ·  planner</text>
+<text x="550" y="189" class="st" text-anchor="middle">weights resident or streamed · channel chunks</text>
+<text x="550" y="204" class="st" text-anchor="middle">batching · software fallback for layers that never fit</text>
+<rect x="346" y="244" width="198" height="132" rx="8" class="boxa"/>
+<text x="445" y="266" class="acc" text-anchor="middle">ON THE ENGINE</text>
+<text x="445" y="294" class="t" text-anchor="middle">conv (im2col on host)</text>
+<text x="445" y="318" class="t" text-anchor="middle">depthwise conv</text>
+<text x="445" y="342" class="t" text-anchor="middle">fully connected</text>
+<rect x="556" y="244" width="198" height="132" rx="8" class="box"/>
+<text x="655" y="266" class="zl" text-anchor="middle">ON THE HOST</text>
+<text x="655" y="290" class="t" text-anchor="middle">max / avg pool</text>
+<text x="655" y="310" class="t" text-anchor="middle">reshape · relu</text>
+<text x="655" y="330" class="t" text-anchor="middle">softmax</text>
+<text x="655" y="350" class="t" text-anchor="middle">quantize / dequantize</text>
+<rect x="346" y="398" width="408" height="66" rx="8" class="box"/>
+<text x="550" y="416" class="bt" text-anchor="middle">HwEngine driver</text>
+<text x="550" y="434" class="st" text-anchor="middle">upload weights + params once</text>
+<text x="550" y="449" class="st" text-anchor="middle">per layer: write X, start, poll, read Y</text>
+<text x="346" y="490" class="zl" text-anchor="start">BACKENDS</text>
+<rect x="346" y="500" width="80" height="34" rx="17" class="chip"/>
+<text x="386" y="522" class="t" text-anchor="middle">cpu</text>
+<rect x="436" y="500" width="80" height="34" rx="17" class="chip"/>
+<text x="476" y="522" class="t" text-anchor="middle">sim</text>
+<rect x="526" y="500" width="100" height="34" rx="17" class="chip"/>
+<text x="576" y="522" class="t" text-anchor="middle">uart:PORT</text>
+<rect x="636" y="500" width="118" height="34" rx="17" class="chipa"/>
+<text x="695" y="522" class="t" text-anchor="middle">HwEngine(bus)</text>
+<text x="346" y="562" class="st" text-anchor="start">PC: pyserial UartBus</text>
+<text x="346" y="580" class="st" text-anchor="start">MCU: McuUartBus, no numpy, MicroPython-safe</text>
+<line x1="550" y1="218" x2="550" y2="244" class="ar" marker-end="url(#h)"/>
+<line x1="445" y1="376" x2="445" y2="398" class="ar" marker-end="url(#h)"/>
+<path d="M274 415 L310 415 L310 186 L346 186" class="ar" fill="none" marker-end="url(#h)"/>
+<line x1="754" y1="431" x2="886" y2="431" class="ar" marker-end="url(#h)" marker-start="url(#hs)"/>
+<line x1="754" y1="431" x2="886" y2="431" class="bus" marker-end="url(#h)" marker-start="url(#hs)"/>
+<text x="820" y="404" class="bt" text-anchor="middle">byte bus</text>
+<text x="820" y="456" class="st" text-anchor="middle">UART · SPI</text>
+<text x="820" y="472" class="st" text-anchor="middle">parallel · AXI</text>
+<rect x="886" y="154" width="308" height="70" rx="8" class="box"/>
+<text x="1040" y="174" class="bt" text-anchor="middle">uart_bus bridge</text>
+<text x="1040" y="192" class="st" text-anchor="middle">[cmd][addr hi][addr lo][data]</text>
+<text x="1040" y="207" class="st" text-anchor="middle">write ack 0x55 · frames up to 128 B</text>
+<line x1="1040" y1="224" x2="1040" y2="246" class="ar" marker-end="url(#h)"/>
+<rect x="886" y="246" width="308" height="346" rx="10" class="boxa"/>
+<text x="1040" y="270" class="bt" text-anchor="middle">tmf_engine</text>
+<text x="1040" y="288" class="st" text-anchor="middle">byte-bus register map</text>
+<rect x="902" y="304" width="66" height="44" rx="6" class="chipa"/>
+<text x="935" y="322" class="bt" text-anchor="middle">W</text>
+<text x="935" y="339" class="st" text-anchor="middle">4 KB</text>
+<text x="935" y="364" class="st" text-anchor="middle">weights</text>
+<rect x="976" y="304" width="66" height="44" rx="6" class="chipa"/>
+<text x="1009" y="322" class="bt" text-anchor="middle">X</text>
+<text x="1009" y="339" class="st" text-anchor="middle">1 KB</text>
+<text x="1009" y="364" class="st" text-anchor="middle">inputs</text>
+<rect x="1050" y="304" width="66" height="44" rx="6" class="chipa"/>
+<text x="1083" y="322" class="bt" text-anchor="middle">P</text>
+<text x="1083" y="339" class="st" text-anchor="middle">1 KB</text>
+<text x="1083" y="364" class="st" text-anchor="middle">params</text>
+<rect x="1124" y="304" width="66" height="44" rx="6" class="chipa"/>
+<text x="1157" y="322" class="bt" text-anchor="middle">Y</text>
+<text x="1157" y="339" class="st" text-anchor="middle">256 B</text>
+<text x="1157" y="364" class="st" text-anchor="middle">outputs</text>
+<rect x="902" y="382" width="276" height="48" rx="8" class="box"/>
+<text x="1040" y="411" class="bt" text-anchor="middle">int8 MAC  ·  1 per clock</text>
+<rect x="902" y="452" width="276" height="62" rx="8" class="box"/>
+<text x="1040" y="468" class="bt" text-anchor="middle">requantiser</text>
+<text x="1040" y="486" class="stm" text-anchor="middle">(acc·mult + round) &gt;&gt; shift</text>
+<text x="1040" y="501" class="stm" text-anchor="middle">+ zero point, clamp to int8</text>
+<line x1="1040" y1="430" x2="1040" y2="452" class="ar" marker-end="url(#h)"/>
+<line x1="1040" y1="370" x2="1040" y2="382" class="ar" marker-end="url(#h)"/>
+<text x="1040" y="544" class="stm" text-anchor="middle">ID 0x130 · CYCLES 0x121</text>
+<text x="1040" y="560" class="stm" text-anchor="middle">CTRL 0x11F · STATUS 0x120</text>
+<text x="1040" y="576" class="stm" text-anchor="middle">X 0x1000 · Y 0x2000 · P 0x3000 · W 0x8000</text>
+<rect x="30" y="636" width="1180" height="112" rx="12" class="panel"/>
+<text x="46" y="660" class="zl" text-anchor="start">THE ONE PRIMITIVE</text>
+<text x="620" y="696" class="mono" text-anchor="middle">y = clamp( requant( bias + Σ (x + in_off) · w ) + out_zp )</text>
+<text x="620" y="722" class="sub" text-anchor="middle">conv: one vector per output pixel   ·   depthwise: per-channel slices   ·   dense: the vector itself</text>
+<text x="620" y="742" class="st" text-anchor="middle">~1,800 LEs · 13 block RAMs · 1 multiplier   ·   K + 54 + ts/8 + ts%8 clocks per output   ·   bit-exact with LiteRT</text>
+</svg>

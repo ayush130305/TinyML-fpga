@@ -25,13 +25,7 @@ Plain vendor-neutral Verilog (no primitives, no IP cores), a ~5 KB-per-model bin
 
 ## How it works
 
-```
- PC                          host (PC or MCU)                          FPGA
- model.tflite --convert--> model.tmf --> tinyml_fpga runtime --link--> bridge -> tmf_engine
-                                         - im2col patch gathering                - X / W / P / Y block RAMs
-                                         - pool / reshape / softmax              - 1 int8 MAC per clock
-                                         - batching, weight streaming            - exact TFLite requantiser
-```
+<p align="center"><img src="docs/architecture.svg" alt="tinyml-fpga architecture: train and convert on the PC, host runtime on a PC or MCU, int8 engine in the FPGA" width="100%"></p>
 
 Every accelerated layer is reduced to one primitive, a batched int8 dot product with TFLite requantisation:
 
@@ -42,9 +36,9 @@ Conv (via im2col), depthwise conv and fully-connected all become that. Pooling, 
 ## Install
 
 ```bash
-pip install git+https://github.com/ayush130305/tinyml-fpga.git      # just use it
+pip install git+https://github.com/ayush130305/TinyML-fpga.git      # just use it
 # or work from source:
-git clone https://github.com/ayush130305/tinyml-fpga.git && cd tinyml-fpga
+git clone https://github.com/ayush130305/TinyML-fpga.git && cd TinyML-fpga
 pip install -e ".[dev,uart]"        # runtime + converter + LiteRT checker + pytest + pyserial
 pip install -e ".[board]"           # + mpremote, to copy the runtime to a MicroPython board
 pip install -e ".[train]"           # + TensorFlow, only for the example training scripts
