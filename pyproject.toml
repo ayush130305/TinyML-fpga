@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tinyml-fpga"
+version = "0.2.0"
+description = "Run int8 TensorFlow Lite models with conv/depthwise/dense layers on an FPGA (any board: UART bridge included, or your own link)"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [{ name = "Ayush Jain" }]
+# The runtime itself needs nothing (it also runs on MicroPython); extras add the PC tools.
+dependencies = []
+
+[project.optional-dependencies]
+convert = ["numpy", "tflite"]                       # .tflite -> .tmf
+check   = ["numpy", "tflite", "ai-edge-litert"]     # bit-exact comparison with LiteRT
+uart    = ["pyserial"]                              # backend="uart:PORT"
+board   = ["mpremote"]                              # python -m tinyml_fpga deploy
+train   = ["tensorflow", "scikit-learn"]            # the examples' training scripts
+dev     = ["pytest", "numpy", "tflite", "ai-edge-litert"]
+
+[tool.setuptools]
+package-dir = { "" = "firmware" }
+packages = ["tinyml_fpga"]
+
+[tool.pytest.ini_options]
+testpaths = ["firmware/tests"]
+filterwarnings = ["ignore::UserWarning"]

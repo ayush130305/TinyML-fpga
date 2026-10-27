@@ -1,0 +1,10 @@
+# PC tools (the board runtime needs none of these)
+numpy
+tflite
+ai-edge-litert
+pyserial
+mpremote
+pytest
+# only for the example training scripts
+tensorflow
+scikit-learn

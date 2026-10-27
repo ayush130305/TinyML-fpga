@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+# simulation outputs
+rtl/sim/*.vvp
+rtl/sim/*.vcd
+rtl/sim/*.hex
+# trained example outputs that come from your own data
+examples/imu_motion/motion.tflite
+examples/imu_motion/motion.tmf
+examples/imu_motion/data/
