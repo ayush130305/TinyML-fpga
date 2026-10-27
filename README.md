@@ -43,6 +43,7 @@ Conv (via im2col), depthwise conv and fully-connected all become that. Pooling, 
 
 ```bash
 pip install git+https://github.com/ayush130305/tinyml-fpga.git      # just use it
+# or work from source:
 git clone https://github.com/ayush130305/tinyml-fpga.git && cd tinyml-fpga
 pip install -e ".[dev,uart]"        # runtime + converter + LiteRT checker + pytest + pyserial
 pip install -e ".[board]"           # + mpremote, to copy the runtime to a MicroPython board
