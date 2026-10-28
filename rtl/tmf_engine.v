@@ -42,7 +42,8 @@ module tmf_engine #(
     parameter HAS_PERF = 0,              // performance counters at 0x160
     parameter HAS_WIN  = 0,              // input window generator (MODE bit 2)
     parameter HAS_FUSE = 0,              // outputs can be written into X (MODE bit 3)
-    parameter HAS_W4   = 0               // 4-bit weights, two per byte (MODE bit 4)
+    parameter HAS_W4   = 0,              // 4-bit weights, two per byte (MODE bit 4)
+    parameter HAS_CB   = 0               // codebook weights: 4-bit indices into a 16-entry int8 table (MODE bit 5)
 ) (
     input  wire        clk,              // clock
     input  wire        rst,              // synchronous reset, active high
@@ -72,7 +73,7 @@ module tmf_engine #(
     // LANES as a 4-bit constant.
     localparam [3:0] LANES4 = LANES;
     // Feature bits reported in the ID block.
-    localparam [7:0] FEATURES = {1'b0, (HAS_PERF != 0), 1'b0, (HAS_W4 != 0), (HAS_FUSE != 0), (HAS_WIN != 0), (HAS_QUEUE != 0), (RQ_MODE == 1)};
+    localparam [7:0] FEATURES = {1'b0, (HAS_PERF != 0), (HAS_CB != 0), (HAS_W4 != 0), (HAS_FUSE != 0), (HAS_WIN != 0), (HAS_QUEUE != 0), (RQ_MODE == 1)};
     // Descriptor RAM size in bytes.
     localparam [32:0] DSIZE = 33'd1 << D_AW;
     // Configuration bytes held in a descriptor.
@@ -92,6 +93,7 @@ module tmf_engine #(
     localparam [3:0] S_ERRW  = 4'd8;     // wait for the output unit, then report an error
     localparam [3:0] S_LD    = 4'd9;     // load the next descriptor from D into the config registers
     localparam [3:0] S_JSTART = 4'd10;   // validate the config and set up the job
+    localparam [3:0] S_CBL   = 4'd11;    // load the codebook (one 16-byte record of parameter bank 0)
 
     // ---------------------------------------------------------------- bus decode
     // Address is in the config/control register block.
@@ -148,6 +150,10 @@ module tmf_engine #(
     wire cWIN  = (HAS_WIN != 0) && cfg[17][2];
     // 4-bit weights: each W byte holds two, low nibble first (HAS_W4).
     wire cW4   = (HAS_W4 != 0) && cfg[17][4];
+    // Codebook weights: the 4-bit index selects an int8 value from a table loaded at job start (HAS_CB).
+    wire cCB   = (HAS_CB != 0) && cfg[17][5];
+    // Weights are stored as packed nibbles.
+    wire cW4p  = cW4 || cCB;
     // Write the outputs into X (HAS_FUSE).
     wire cOUTX = (HAS_FUSE != 0) && cfg[17][3];
     // Input base offset in X.
@@ -266,7 +272,7 @@ module tmf_engine #(
     // Dot length, zero-extended to the pointer width.
     wire [32:0] k33  = {17'd0, cK};
     // Weight bytes per output channel row: K, or ceil(K / 2) for 4-bit weights.
-    wire [32:0] kb33 = cW4 ? ((k33 + 33'd1) >> 1) : k33;
+    wire [32:0] kb33 = cW4p ? ((k33 + 33'd1) >> 1) : k33;
     // Vector stride, zero-extended to the pointer width.
     wire [32:0] xs33 = {17'd0, cXSTRIDE};
     // Channels left in this vector.
@@ -315,7 +321,7 @@ module tmf_engine #(
     // Bias load strobe.
     wire acc_init = (st == S_INIT);
     // Parameter RAM read address (local, shared by all banks).
-    wire [32:0] p_ra = pp + {29'd0, pc};
+    wire [32:0] p_ra = pp + ((st == S_CBL) ? {28'd0, ld[4:0]} : {29'd0, pc});
 
     // Output address zero-extended so it can address X.
     wire [11:0] y_wa12 = y_wa;
@@ -328,6 +334,12 @@ module tmf_engine #(
     tmf_ram #(.AW(Y_AW)) u_y (.clk(clk), .we(y_we & ~cOUTX), .waddr(y_wa12[Y_AW-1:0]), .wdata(y_wd),
                                .raddr(bus_addr[Y_AW-1:0]), .q(y_q));
 
+    // Codebook table (HAS_CB): 16 int8 values.
+    reg [7:0] cbk [0:15];
+    // Rows per parameter bank of this job (the codebook record follows them in bank 0).
+    wire [15:0] cb_rows = (cN + (LANES - 1)) >> LB;
+    // The codebook record does not fit parameter bank 0.
+    wire cb_bad = cCB && ({1'b0, cPBASE} + {1'b0, cb_rows} + 17'd1 > (BPSIZE >> 4));
     // Which nibble of the weight byte the lanes get (registered with the RAM read).
     reg nsel;
     always @(posedge clk) nsel <= ki[0];
@@ -363,7 +375,7 @@ module tmf_engine #(
                                     .q(p_q[8*gl +: 8]));
             // The weight the MAC multiplies: the whole byte, or one sign-extended nibble.
             wire [3:0] wnib = nsel ? w_q[8*gl+4 +: 4] : w_q[8*gl +: 4];
-            wire [7:0] wsel = cW4 ? {{4{wnib[3]}}, wnib} : w_q[8*gl +: 8];
+            wire [7:0] wsel = cCB ? cbk[wnib] : cW4 ? {{4{wnib[3]}}, wnib} : w_q[8*gl +: 8];
             // This contains the instantiation for this lane's MAC
             tmf_lane u_lane (.clk(clk), .par_en(par_en), .p_byte(p_q[8*gl +: 8]), .acc_init(acc_init), .v1(v1), .v2(v2),
                              .xoff(xoff), .w_byte(wsel), .acc_o(acc_w[32*gl +: 32]),
@@ -723,8 +735,26 @@ module tmf_engine #(
                             icoff <= 16'd0;
                             dmc   <= 8'd0;
                         end
-                        // Check bounds first.
-                        st     <= S_CHK;
+                        // Codebook jobs load their table first (its record follows the job's parameter records).
+                        pp     <= cCB ? {13'd0, cPBASE + cb_rows, 4'd0} : {13'd0, cPBASE, 4'd0};
+                        // Counter for the table load.
+                        ld     <= 6'd0;
+                        // Check bounds first (a codebook that does not fit is an error).
+                        st     <= cb_bad ? S_ERRW : (cCB ? S_CBL : S_CHK);
+                    end
+                end
+                // Read the 16 codebook bytes (the byte addressed in clock n arrives in clock n+1).
+                S_CBL: begin
+                    // Next byte.
+                    ld <= ld + 6'd1;
+                    // Store the byte requested in the previous clock.
+                    if (ld != 6'd0) cbk[ld[3:0] - 4'd1] <= p_q[7:0];
+                    // After the last byte the job's own parameter records are addressed again.
+                    if (ld == 6'd16) begin
+                        // Back to the first parameter record.
+                        pp <= {13'd0, cPBASE, 4'd0};
+                        // Check bounds.
+                        st <= S_CHK;
                     end
                 end
                 // Every memory access of this group must be in range.
@@ -795,7 +825,7 @@ module tmf_engine #(
                         xp  <= {17'd0, xrs + cKYS};
                     end
                     // Next W byte (4-bit weights: every second clock).
-                    wp <= wp + (cW4 ? {32'd0, ki[0]} : 33'd1);
+                    wp <= wp + (cW4p ? {32'd0, ki[0]} : 33'd1);
                     // Count the issue.
                     ki <= ki + 16'd1;
                     // Last issue: wait for the pipeline.

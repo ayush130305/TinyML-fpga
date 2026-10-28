@@ -7,7 +7,7 @@ import json
 import struct
 
 from . import kernels as kn
-from .engine import CpuEngine, MODE_DW, MODE_WIN, MODE_OUTX, MODE_W4, window_block
+from .engine import CpuEngine, MODE_DW, MODE_WIN, MODE_OUTX, MODE_W4, MODE_CB, window_block
 
 # File magic.
 MAGIC = b"TMF1"
@@ -124,11 +124,13 @@ class Model:
         for op in eops:
             op["_rows"] = (op["N"] + L - 1) // L
             w4 = op.get("wbits", 8) == 4
-            op["_rb"] = kn.row_bytes(op["K"], w4)
-            op["_wm"] = MODE_W4 if w4 else 0
+            # A codebook layer stores 4-bit indices and carries one extra parameter record (the table).
+            op["_cb"] = 1 if op.get("cb") else 0
+            op["_rb"] = kn.row_bytes(op["K"], w4 or op["_cb"])
+            op["_wm"] = MODE_CB if op["_cb"] else (MODE_W4 if w4 else 0)
         # Total weight bytes and parameter records per bank.
         tw = sum(op["_rows"] * op["_rb"] for op in eops)
-        tp = sum(op["_rows"] for op in eops)
+        tp = sum(op["_rows"] + op["_cb"] for op in eops)
         # Everything fits: weights stay resident on the engine for every inference.
         self.resident = tw <= e.w_cap and tp <= e.p_cap
         # Running local offsets (per bank).
@@ -142,12 +144,15 @@ class Model:
                 # Upload once.
                 e.upload_w(wo, self._blob(op["w"]), op["_rb"])
                 e.upload_p(po, self._blob(op["p"]))
+                # Codebook table right after the layer's records.
+                if op["_cb"]:
+                    e.upload_cb(po + op["_rows"], self._blob(op["cb"]))
                 # Advance.
                 wo += op["_rows"] * op["_rb"]
-                po += op["_rows"]
+                po += op["_rows"] + op["_cb"]
             # Channels per job: weights, parameters and one vector's outputs must fit, and for depthwise
             # one vector holds K bytes per channel, so X limits the chunk too.
-            c = min(op["N"], L * (e.w_cap // op["_rb"]), L * e.p_cap, e.y_cap)
+            c = min(op["N"], L * (e.w_cap // op["_rb"]), L * (e.p_cap - op["_cb"]), e.y_cap)
             # Depthwise: K * chunk bytes per vector in X.
             if op["op"] == "dw":
                 c = min(c, e.x_cap // op["K"])
@@ -158,7 +163,7 @@ class Model:
             if c < op["N"]:
                 c -= c % L
             # An engine without 4-bit weights cannot run a 4-bit layer: software.
-            if op["_wm"] and not getattr(e, "has_w4", False):
+            if (op["_wm"] == MODE_W4 and not getattr(e, "has_w4", False)) or (op["_cb"] and not getattr(e, "has_cb", False)):
                 c = 0
             # 0 means "never fits": this layer runs in software.
             op["_chunk"] = c
@@ -167,7 +172,7 @@ class Model:
             if getattr(e, "has_win", False) and op["op"] in ("conv", "dw"):
                 # The image must fit X and one row of outputs of the chunk must fit Y.
                 img = op["H"] * op["W"] * op["C"]
-                cw = min(op["N"], L * (e.w_cap // op["_rb"]), L * e.p_cap, e.y_cap // op["OW"])
+                cw = min(op["N"], L * (e.w_cap // op["_rb"]), L * (e.p_cap - op["_cb"]), e.y_cap // op["OW"])
                 # Chunks that do not cover the whole layer must start on a lane boundary.
                 if cw < op["N"]:
                     cw -= cw % L
@@ -175,7 +180,7 @@ class Model:
                 if op["op"] == "dw" and cw < op["N"]:
                     cw = 0
                 # Descriptor fields must hold the geometry.
-                if img <= e.x_cap and cw > 0 and self._win(op, 0, 0) is not None and (not op["_wm"] or getattr(e, "has_w4", False)):
+                if img <= e.x_cap and cw > 0 and self._win(op, 0, 0) is not None and (op["_wm"] != MODE_W4 or getattr(e, "has_w4", False)) and (not op["_cb"] or getattr(e, "has_cb", False)):
                     op["_wchunk"] = cw
 
     # Input tensor description.
@@ -352,6 +357,8 @@ class Model:
             w, p = op["w"], op["p"]
             e.upload_w(0, self._blob([w[0] + n0 * K, nc * K]), K)
             e.upload_p(0, self._blob([p[0] + n0 * kn.PARAM_BYTES, nc * kn.PARAM_BYTES]))
+            if op["_cb"]:
+                e.upload_cb((nc + e.lanes - 1) // e.lanes, self._blob(op["cb"]))
             return 0, 0
         # Software copy holds the whole layer.
         return n0 * K, n0
@@ -528,6 +535,8 @@ class Model:
         if not op["_chunk"]:
             eng.upload_w(0, self._blob(op["w"]), op["_rb"])
             eng.upload_p(0, self._blob(op["p"]))
+            if op["_cb"]:
+                eng.upload_cb(N, self._blob(op["cb"]))
         # Each channel chunk.
         for n0 in range(0, N, cs):
             # Chunk end and size.

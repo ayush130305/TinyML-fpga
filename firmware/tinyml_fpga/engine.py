@@ -13,7 +13,9 @@
 #   0x10F ACT_MIN  s8    clamp low
 #   0x110 ACT_MAX  s8    clamp high
 #   0x111 MODE     u8    bit0 depthwise (channel o uses x[o*K..]), bit1 raw int32 output, bit2 window mode,
-#                        bit3 write outputs to X, bit4 4-bit weights (rows of ceil(K/2) bytes, low nibble first)
+#                        bit3 write outputs to X, bit4 4-bit weights (rows of ceil(K/2) bytes, low nibble first),
+#                        bit5 codebook weights (same packing; the nibble indexes the 16-byte table stored as the
+#                        parameter record after the layer's records, local index PBASE + ceil(N/LANES), bank 0)
 #   0x112 XBASE    u16   byte offset of the job's first input vector in X (version 2)
 #   0x114 YBASE    u16   byte offset of the job's first output in Y (version 2)
 #   0x140 window block, 31 bytes, write-only (builds with the window generator, MODE bit 2): see WIN_FMT
@@ -62,11 +64,13 @@ VERSIONS = (1, 2)
 # Version written by the current RTL and SimBus.
 VERSION = 2
 # FEATURES bits.
-F_RQ_PIPE, F_QUEUE, F_WIN, F_FUSE, F_W4, F_PERF = 1, 2, 4, 8, 0x10, 0x40
+F_RQ_PIPE, F_QUEUE, F_WIN, F_FUSE, F_W4, F_CB, F_PERF = 1, 2, 4, 8, 0x10, 0x20, 0x40
 # STATUS bits.
 BUSY, DONE, ERR = 1, 2, 4
 # MODE bits.
-MODE_DW, MODE_RAW, MODE_WIN, MODE_OUTX, MODE_W4 = 1, 2, 4, 8, 16
+MODE_DW, MODE_RAW, MODE_WIN, MODE_OUTX, MODE_W4, MODE_CB = 1, 2, 4, 8, 16, 32
+# Clocks a codebook job spends loading its table.
+CB_LOAD_CLOCKS = 17
 # CTRL commands.
 CMD_START, CMD_QUEUE, CMD_CLEAR = 0x01, 0x02, 0x80
 
@@ -96,7 +100,7 @@ class CpuEngine:
     name = "cpu"
     # No hardware features, but 4-bit weights are supported in software.
     has_win = has_fuse = has_queue = False
-    has_w4 = True
+    has_w4 = has_cb = True
     # The software engine has one contiguous weight store.
     lanes = 1
 
@@ -129,13 +133,20 @@ class CpuEngine:
         # Copy.
         self.P[off:off + len(data)] = data
 
+    # Store a codebook (16 int8 values) as the parameter record at index rec (a codebook layer's records are followed by it).
+    def upload_cb(self, rec, cb):
+        self.upload_p(rec, cb)
+
     # Run one job; x is a bytes-like buffer of int8 data; returns a list of ints.
     def run(self, K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, x, xbase=0, ybase=0, win=None):
         # The software engine takes plain vectors only (the model builds them on the host).
         if mode & (MODE_WIN | MODE_OUTX):
             raise ValueError("the software engine has no window generator or fusion")
         # Weights of the N channels (4-bit weights are packed two per byte).
-        if mode & MODE_W4:
+        if mode & MODE_CB:
+            cbo = (pbase + N) * PARAM_BYTES
+            w = unpack_w4(self.W[wbase:wbase + N * row_bytes(K, True)], K, N, to_i8_list(self.P[cbo:cbo + 16]))
+        elif mode & MODE_W4:
             w = unpack_w4(self.W[wbase:wbase + N * row_bytes(K, True)], K, N)
         else:
             w = to_i8_list(self.W[wbase:wbase + N * K])
@@ -173,8 +184,8 @@ class HwEngine:
         self.has_queue, self.has_perf = bool(self.features & F_QUEUE), bool(self.features & F_PERF)
         # Window generator and fusion (outputs into X).
         self.has_win, self.has_fuse = bool(self.features & F_WIN), bool(self.features & F_FUSE)
-        # 4-bit weights.
-        self.has_w4 = bool(self.features & F_W4)
+        # 4-bit weights and codebook weights.
+        self.has_w4, self.has_cb = bool(self.features & F_W4), bool(self.features & F_CB)
         # Config bytes in a descriptor of this build.
         self.ncfg = NCFG + (NWIN if self.has_win else 0)
         self.queue_slots = (1 << bus.read_block(R_MAGIC + 8, 1)[0]) // DESC_BYTES if self.has_queue else 0
@@ -223,6 +234,11 @@ class HwEngine:
             # Skip banks that got no record.
             if recs:
                 self.bus.write_block(P_ADDR + b * self._pbank + rec * PARAM_BYTES, recs)
+
+    # Write a codebook (16 int8 values) as the parameter record rec of bank 0 (the engine finds it right after the
+    # layer's own records: rec = PBASE + ceil(N / lanes)).
+    def upload_cb(self, rec, cb):
+        self.bus.write_block(P_ADDR + rec * PARAM_BYTES, cb)
 
     # Poll STATUS until the job (or queue) is done; remember the clock count; raise on error or timeout.
     def _wait(self):
@@ -414,12 +430,12 @@ def window_block(H, W, C, kh, kw, dh, dw_, sh, sw, ph, pw, dm, ow, r0, xbase):
 class SimBus:
     # Default sizes match the tmf_engine.v defaults.
     def __init__(self, w_aw=12, x_aw=10, y_aw=8, p_aw=10, lanes=1, rq_mode=0, queue=False, d_aw=9, perf=False,
-                 win=False, fuse=False, w4=False):
+                 win=False, fuse=False, w4=False, cb=False):
         # Address widths and build options.
         self.aw = (w_aw, x_aw, y_aw, p_aw)
         self.lanes, self.rq_mode, self.queue, self.d_aw, self.perf = lanes, rq_mode, queue, d_aw, perf
         # Window generator and fusion; config bytes per descriptor.
-        self.win, self.fuse, self.w4 = win, fuse, w4
+        self.win, self.fuse, self.w4, self.cb = win, fuse, w4, cb
         self.ncfg = NCFG + (NWIN if win else 0)
         # Memories (W and P are bank-major: bank b starts at b * size / lanes).
         self.W, self.X, self.Y, self.P = bytearray(1 << w_aw), bytearray(1 << x_aw), bytearray(1 << y_aw), bytearray(1 << p_aw)
@@ -504,7 +520,7 @@ class SimBus:
         # Identification block.
         if R_MAGIC <= a < R_MAGIC + 9:
             feat = ((F_RQ_PIPE if self.rq_mode == 1 else 0) | (F_QUEUE if self.queue else 0) | (F_WIN if self.win else 0)
-                    | (F_FUSE if self.fuse else 0) | (F_W4 if self.w4 else 0) | (F_PERF if self.perf else 0))
+                    | (F_FUSE if self.fuse else 0) | (F_W4 if self.w4 else 0) | (F_CB if self.cb else 0) | (F_PERF if self.perf else 0))
             return (MAGIC, VERSION, self.aw[0], self.aw[1], self.aw[2], self.aw[3], self.lanes, feat, self.d_aw if self.queue else 0)[a - R_MAGIC]
         # Performance counters.
         if R_PERF <= a < R_PERF + 16:
@@ -548,9 +564,14 @@ class SimBus:
         dw = bool(mode & MODE_DW)
         # 4-bit weights are only honoured on builds that have them; rows are then ceil(K / 2) bytes.
         w4 = bool(mode & MODE_W4) and self.w4
-        rb = row_bytes(K, w4)
+        cbm = bool(mode & MODE_CB) and self.cb
+        rb = row_bytes(K, w4 or cbm)
         # Empty job: error, nothing computed.
         if K == 0 or N == 0 or nvec == 0:
+            return False, 0, 0, 0, 0
+        # Codebook record (parameter bank 0, right after the job's records); it must fit.
+        crows = (N + L - 1) // L
+        if cbm and (pb + crows + 1) * PARAM_BYTES > bp:
             return False, 0, 0, 0, 0
         # Output memory (X when fused).
         osize = len(self.X) if outx else len(self.Y)
@@ -587,7 +608,7 @@ class SimBus:
         else:
             xin = to_i8_list(self.X[xbase:])
         # Compute with the shared kernel (the input vectors start at xbase).
-        y = dot_requant(xin, unpack_w4(w, K, N) if w4 else to_i8_list(w), p, K, N, nvec, xs, ioff, zp, amin, amax, dw=dw, raw=bool(mode & MODE_RAW))
+        y = dot_requant(xin, unpack_w4(w, K, N, to_i8_list(self.P[(pb + crows) * PARAM_BYTES:(pb + crows) * PARAM_BYTES + 16]) if cbm else None) if (w4 or cbm) else to_i8_list(w), p, K, N, nvec, xs, ioff, zp, amin, amax, dw=dw, raw=bool(mode & MODE_RAW))
         # Store results at ybase (in Y, or in X when fused).
         mem = self.X if outx else self.Y
         if mode & MODE_RAW:
@@ -600,6 +621,9 @@ class SimBus:
         # Exact clock count and counters.
         shifts = [struct.unpack_from("<b", p, o * PARAM_BYTES + 8)[0] for o in range(N)]
         cyc, mac, stall = job_stats(K, N, nvec, shifts, mode, L, self.rq_mode)
+        # Codebook jobs load their table first.
+        if cbm:
+            cyc += CB_LOAD_CLOCKS
         return True, cyc, mac, stall, nvec * N * ob
 
     # CTRL = start: one job from the config registers.

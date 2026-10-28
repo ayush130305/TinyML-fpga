@@ -1,5 +1,7 @@
 # transform.py - PC side: rewrite the weights of a converted .tmf model.
 #   to_int4(tmf, layers)      re-quantise chosen layers to signed 4-bit weights (engine builds with HAS_W4)
+#   to_codebook(tmf, layers)  replace chosen layers' weights by 4-bit indices into a 16-value table found by k-means
+#                             (engine builds with HAS_CB; the same size as int4 but a better fit to the weights)
 # The result is a normal .tmf file with "wbits": 4 on the changed ops; the runtime and the engine take care of the rest.
 # (Not bit-exact with the int8 model by nature: compare() measures how far the outputs move.)
 
@@ -72,7 +74,7 @@ def to_int4(tmf, layers="auto"):
         # Existing weight and parameter blobs.
         w = blob[op["w"][0]:op["w"][0] + op["w"][1]]
         p = blob[op["p"][0]:op["p"][0] + op["p"][1]]
-        if i in chosen and op.get("wbits", 8) == 8:
+        if i in chosen and op.get("wbits", 8) == 8 and not op.get("cb"):
             K, N = op["K"], op["N"]
             w8 = kn.to_i8_list(w)
             w4, scales = _quantize_rows(w8, K, N)
@@ -98,6 +100,81 @@ def to_int4(tmf, layers="auto"):
         new += w
         op["p"] = [len(new), len(p)]
         new += p
+        # A layer that already has a codebook keeps it.
+        if op.get("cb"):
+            old = op["cb"]
+            op["cb"] = [len(new), 16]
+            new += blob[old[0]:old[0] + 16]
+    return write_tmf(header, new), report
+
+
+# Best 16-value int8 table for a layer's weights (1-D k-means / Lloyd on the value histogram), sorted.
+def _kmeans16(w8):
+    # Histogram of the 256 possible values.
+    hist = [0] * 256
+    for v in w8:
+        hist[v + 128] += 1
+    vals = [i - 128 for i in range(256) if hist[i]]
+    # Fewer than 17 distinct values: the table holds them all exactly.
+    if len(vals) <= 16:
+        return sorted(vals + [vals[-1]] * (16 - len(vals)))
+    # Start from evenly spaced quantiles of the weights.
+    srt = sorted(w8)
+    cent = [srt[int((i + 0.5) * len(srt) / 16)] for i in range(16)]
+    for _ in range(60):
+        # Assign each value to its nearest centroid and average.
+        sums, cnt = [0] * 16, [0] * 16
+        for v in vals:
+            j = min(range(16), key=lambda c: (abs(v - cent[c]), c))
+            sums[j] += v * hist[v + 128]
+            cnt[j] += hist[v + 128]
+        new = [kn.round_away(sums[j] / cnt[j]) if cnt[j] else cent[j] for j in range(16)]
+        if new == cent:
+            break
+        cent = new
+    return sorted(cent)
+
+
+# Replace the weights of the selected layers (see select_layers) by 4-bit indices into a per-layer 16-entry table.
+# Returns (tmf bytes, report) like to_int4; the biases and multipliers stay as they are.
+def to_codebook(tmf, layers="auto"):
+    header, blob = read_tmf(tmf)
+    chosen = set(select_layers(header, layers))
+    new, report = bytearray(), []
+    for i, op in enumerate(header["ops"]):
+        if op["op"] not in WEIGHT_OPS:
+            continue
+        w = blob[op["w"][0]:op["w"][0] + op["w"][1]]
+        p = blob[op["p"][0]:op["p"][0] + op["p"][1]]
+        cbb = None
+        if i in chosen and op.get("wbits", 8) == 8 and not op.get("cb"):
+            K, N = op["K"], op["N"]
+            w8 = kn.to_i8_list(w)
+            cb = _kmeans16(w8)
+            # Index of the nearest table entry for every weight.
+            idx = [min(range(16), key=lambda c: (abs(v - cb[c]), c)) for v in w8]
+            packed = bytearray()
+            for o in range(N):
+                q = idx[o * K:(o + 1) * K] + ([0] if K & 1 else [])
+                for k in range(0, len(q), 2):
+                    packed.append(q[k] | (q[k + 1] << 4))
+            err = sum((v - cb[j]) ** 2 for v, j in zip(w8, idx))
+            sig = sum(v * v for v in w8) or 1
+            report.append({"op": i, "kind": op["kind"] if "kind" in op else op["op"], "K": K, "N": N,
+                           "rel_rms_error": math.sqrt(err / sig), "bytes_saved": len(w) - len(packed) - 16})
+            cbb = bytes(v & 0xFF for v in cb)
+            w = bytes(packed)
+        op["w"] = [len(new), len(w)]
+        new += w
+        op["p"] = [len(new), len(p)]
+        new += p
+        if cbb is not None:
+            op["cb"] = [len(new), 16]
+            new += cbb
+        elif op.get("cb"):
+            old = op["cb"]
+            op["cb"] = [len(new), 16]
+            new += blob[old[0]:old[0] + 16]
     return write_tmf(header, new), report
 
 

@@ -117,8 +117,9 @@ def row_bytes(K, w4):
     return (K + 1) // 2 if w4 else K
 
 
-# Unpack N rows of K signed 4-bit weights (two per byte, low nibble = even index, rows start on a byte) to int8 values.
-def unpack_w4(buf, K, N):
+# Unpack N rows of K 4-bit weights (two per byte, low nibble = even index, rows start on a byte) to int8 values:
+# signed nibbles, or with a 16-entry codebook cb (int8 values) the nibbles are indices into it.
+def unpack_w4(buf, K, N, cb=None):
     # Bytes per row.
     rb = (K + 1) // 2
     # Output list.
@@ -129,8 +130,8 @@ def unpack_w4(buf, K, N):
         for k in range(K):
             # Nibble k of the row.
             v = (buf[b0 + (k >> 1)] >> ((k & 1) * 4)) & 0xF
-            # Sign extend.
-            out.append(v - 16 if v > 7 else v)
+            # Codebook lookup, or sign extend.
+            out.append(cb[v] if cb is not None else (v - 16 if v > 7 else v))
     return out
 
 

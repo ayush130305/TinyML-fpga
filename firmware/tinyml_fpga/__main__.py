@@ -42,16 +42,17 @@ def cmd_convert(a):
     if not a.no_check:
         a.n = 20
         cmd_check(a)
-    # Optional 4-bit weights for the engine builds with HAS_W4.
-    if a.int4:
-        from .transform import to_int4, compare
-        sel = a.int4 if a.int4 in ("all", "auto") else [int(v) for v in a.int4.split(",")]
+    # Optional 4-bit weights (HAS_W4 builds) or codebook weights (HAS_CB builds).
+    if a.int4 or a.codebook:
+        from .transform import to_int4, to_codebook, compare
+        arg = a.int4 or a.codebook
+        sel = arg if arg in ("all", "auto") else [int(v) for v in arg.split(",")]
         with open(dst, "rb") as f:
             t8 = f.read()
-        t4, rep = to_int4(t8, sel)
+        t4, rep = (to_int4 if a.int4 else to_codebook)(t8, sel)
         with open(dst, "wb") as f:
             f.write(t4)
-        print("wrote %s with 4-bit weights (%d bytes, %d layers):" % (dst, len(t4), len(rep)))
+        print("wrote %s with %s weights (%d bytes, %d layers):" % (dst, "4-bit" if a.int4 else "codebook", len(t4), len(rep)))
         for r in rep:
             print("  op %d %-4s K=%-5d N=%-4d weight error %.1f%% of RMS, %d weight bytes saved" % (
                 r["op"], r["kind"], r["K"], r["N"], 100 * r["rel_rms_error"], r["bytes_saved"]))
@@ -110,6 +111,8 @@ def main():
     c = sub.add_parser("convert", help=".tflite -> .tmf, then check against LiteRT")
     c.add_argument("model"); c.add_argument("output", nargs="?")
     c.add_argument("--no-check", action="store_true")
+    c.add_argument("--codebook", metavar="LAYERS", help="codebook-compressed weights for engine builds with HAS_CB (same "
+                   "choices as --int4)")
     c.add_argument("--int4", metavar="LAYERS", help="4-bit weights for engine builds with HAS_W4: auto (all but first and last "
                    "layer), all, or weight-layer numbers like 1,2")
     c.set_defaults(fn=cmd_convert)

@@ -19,20 +19,21 @@ PERF=${PERF:-0}
 WIN=${WIN:-0}
 FUSE=${FUSE:-0}
 W4=${W4:-0}
+CB=${CB:-0}
 
 # Run one bench: name, lanes, rq_mode, queue, perf.
 run_bench() {
-    local t=$1 l=$2 q=$3 u=$4 f=$5 w=${6:-0} x=${7:-0} z=${8:-0}
+    local t=$1 l=$2 q=$3 u=$4 f=$5 w=${6:-0} x=${7:-0} z=${8:-0} c=${9:-0}
     case "$t" in
         requant)
             python3 gen_requant_vectors.py 1 20000 > /dev/null
             iverilog -g2012 -o tb_requant.vvp tb_requant.v $R/tmf_rq.v $R/tmf_requant.v $R/tmf_requant_pipe.v
             vvp -n tb_requant.vvp | grep -v readmemh ;;
         engine)
-            iverilog -g2012 -P tb_engine.LANES=$l -P tb_engine.RQ_MODE=$q -P tb_engine.HAS_QUEUE=$u -P tb_engine.HAS_PERF=$f -P tb_engine.HAS_WIN=$w -P tb_engine.HAS_FUSE=$x -P tb_engine.HAS_W4=$z -o tb_engine.vvp tb_engine.v $ENG
+            iverilog -g2012 -P tb_engine.LANES=$l -P tb_engine.RQ_MODE=$q -P tb_engine.HAS_QUEUE=$u -P tb_engine.HAS_PERF=$f -P tb_engine.HAS_WIN=$w -P tb_engine.HAS_FUSE=$x -P tb_engine.HAS_W4=$z -P tb_engine.HAS_CB=$c -o tb_engine.vvp tb_engine.v $ENG
             vvp -n tb_engine.vvp | grep -v readmemh ;;
         uart)
-            iverilog -g2012 -P tb_uart_top.LANES=$l -P tb_uart_top.RQ_MODE=$q -P tb_uart_top.HAS_QUEUE=$u -P tb_uart_top.HAS_PERF=$f -P tb_uart_top.HAS_WIN=$w -P tb_uart_top.HAS_FUSE=$x -P tb_uart_top.HAS_W4=$z -o tb_uart_top.vvp tb_uart_top.v \
+            iverilog -g2012 -P tb_uart_top.LANES=$l -P tb_uart_top.RQ_MODE=$q -P tb_uart_top.HAS_QUEUE=$u -P tb_uart_top.HAS_PERF=$f -P tb_uart_top.HAS_WIN=$w -P tb_uart_top.HAS_FUSE=$x -P tb_uart_top.HAS_CB=$c -P tb_uart_top.HAS_W4=$z -o tb_uart_top.vvp tb_uart_top.v \
                 $R/tinyml_uart_top.v $R/uart_bus.v $R/uart_rx.v $R/uart_tx.v $ENG
             vvp -n tb_uart_top.vvp | grep -v readmemh ;;
         *) echo "unknown bench $t (requant | engine | uart)"; exit 1 ;;
@@ -42,11 +43,11 @@ run_bench() {
 if [ $# -eq 0 ]; then
     # Everything, with fresh vectors.
     run_bench requant 1 0 0 0
-    # lanes rq_mode queue perf win fuse w4
-    for cfg in "1 0 0 0 0 0 0" "1 1 1 1 1 1 1" "4 1 1 1 1 1 1" "8 0 0 1 1 0 1" "2 1 1 0 0 1 0" "1 0 0 0 0 0 1"; do
+    # lanes rq_mode queue perf win fuse w4 cb
+    for cfg in "1 0 0 0 0 0 0 0" "1 1 1 1 1 1 1 1" "4 1 1 1 1 1 1 1" "8 0 0 1 1 0 1 1" "2 1 1 0 0 1 0 1" "1 0 0 0 0 0 1 0" "2 0 0 0 0 0 0 1"; do
         set -- $cfg
-        python3 gen_engine_vectors.py 1 80 $1 $2 $3 $4 $5 $6 $7 > /dev/null
-        run_bench engine $1 $2 $3 $4 $5 $6 $7
+        python3 gen_engine_vectors.py 1 80 $1 $2 $3 $4 $5 $6 $7 $8 > /dev/null
+        run_bench engine $1 $2 $3 $4 $5 $6 $7 $8
     done
     for cfg in "1 0 0 0 0 0 0" "2 1 1 1 1 1 0"; do
         set -- $cfg
@@ -56,6 +57,9 @@ if [ $# -eq 0 ]; then
     # A 4-bit-weight model through the UART bridge.
     python3 gen_system_vectors.py ../../firmware/tests/models/m_cnn.tflite 2 2 1 1 0 1 1 1 1 > /dev/null
     run_bench uart 2 1 1 0 1 1 1
+    # A codebook model through the UART bridge.
+    python3 gen_system_vectors.py ../../firmware/tests/models/m_cnn.tflite 2 2 1 1 0 1 1 0 0 1 1 > /dev/null
+    run_bench uart 2 1 1 0 1 1 0 1
 else
-    for t in "$@"; do run_bench "$t" "$LANES" "$RQ_MODE" "$QUEUE" "$PERF" "$WIN" "$FUSE" "$W4"; done
+    for t in "$@"; do run_bench "$t" "$LANES" "$RQ_MODE" "$QUEUE" "$PERF" "$WIN" "$FUSE" "$W4" "$CB"; done
 fi

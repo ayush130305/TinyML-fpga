@@ -11,7 +11,7 @@
 #   05_000000   expect CYCLES == the next word
 #   FF_000000   end of test
 #   06_000000   start the descriptor queue (CTRL = 2) and wait for STATUS.done
-# usage: python3 gen_engine_vectors.py [seed] [jobs] [lanes] [rq_mode] [queue] [perf] [win] [fuse] [w4]
+# usage: python3 gen_engine_vectors.py [seed] [jobs] [lanes] [rq_mode] [queue] [perf] [win] [fuse] [w4] [cb]
 # The memory sizes below must match the parameters of tb_engine.v.
 
 import os
@@ -22,7 +22,7 @@ import sys
 # Make the package importable from the repo.
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "firmware"))
 from tinyml_fpga.engine import (SimBus, HwEngine, config_frame, descriptor_bytes, X_ADDR, Y_ADDR, D_ADDR, R_CFG, R_QCNT, R_QDONE,
-                                R_PERF, DESC_BYTES, MODE_DW, MODE_RAW, MODE_WIN, MODE_OUTX, R_WIN, WIN_FMT, NCFG, NWIN, window_block, MODE_W4)
+                                R_PERF, DESC_BYTES, MODE_DW, MODE_RAW, MODE_WIN, MODE_OUTX, R_WIN, WIN_FMT, NCFG, NWIN, window_block, MODE_W4, MODE_CB)
 from tinyml_fpga.kernels import pack_param
 
 # RAM sizes of the testbench build (total over all banks).
@@ -37,12 +37,13 @@ PERF = int(sys.argv[6]) if len(sys.argv) > 6 else 0
 WIN = int(sys.argv[7]) if len(sys.argv) > 7 else 0
 FUSE = int(sys.argv[8]) if len(sys.argv) > 8 else 0
 W4 = int(sys.argv[9]) if len(sys.argv) > 9 else 0
+CB = int(sys.argv[10]) if len(sys.argv) > 10 else 0
 # Random generator.
 rng = random.Random(SEED)
 # Output words.
 words = []
 # Golden model.
-sim = SimBus(W_AW, X_AW, Y_AW, P_AW, LANES, RQ_MODE, queue=bool(QUEUE), d_aw=9, perf=bool(PERF), win=bool(WIN), fuse=bool(FUSE), w4=bool(W4))
+sim = SimBus(W_AW, X_AW, Y_AW, P_AW, LANES, RQ_MODE, queue=bool(QUEUE), d_aw=9, perf=bool(PERF), win=bool(WIN), fuse=bool(FUSE), w4=bool(W4), cb=bool(CB))
 
 
 # A bus that forwards to the model and records every written byte as a testbench word.
@@ -104,9 +105,18 @@ def rbytes(n):
 
 
 # Weight bytes per row, and the MODE bit for a job (a random half of the jobs use 4-bit weights on W4 builds).
-def wpick(K):
-    w4 = bool(W4) and rng.random() < 0.5
+def wpick(K, rows):
+    # Plain, 4-bit, or codebook (which needs one more parameter record in bank 0).
+    r = rng.random()
+    if CB and r < 0.4 and rows + 1 <= BP:
+        return (K + 1) // 2, MODE_CB
+    w4 = bool(W4) and r > 0.5
     return ((K + 1) // 2 if w4 else K), (MODE_W4 if w4 else 0)
+
+
+# Extra parameter records a job's mode needs.
+def cbx(wmode):
+    return 1 if wmode == MODE_CB else 0
 
 
 # Random parameter records for n channels.
@@ -133,6 +143,9 @@ eng.upload_p(0, pack_param(10, 1 << 30, 0) + pack_param(-5, (1 << 31) - 1, -1))
 job(4, 2, 1, 4, 0, 0, 0, 0, -128, 127, 0)
 # Directed: raw int32 output.
 job(4, 2, 1, 4, 0, 0, 3, 0, -128, 127, MODE_RAW)
+# Directed: a codebook that does not fit the parameter bank must fail.
+if CB:
+    job(4, 1, 1, 4, 0, BP - 1, 0, 0, -128, 127, MODE_CB, check_cycles=False)
 # Directed: error cases (empty job, X overrun, W overrun, P overrun, Y overrun).
 job(0, 1, 1, 1, 0, 0, 0, 0, -128, 127, 0)
 job(4, 1, 1 << X_AW, 4, 0, 0, 0, 0, -128, 127, 0, check_cycles=False)
@@ -153,7 +166,7 @@ for j in range(JOBS):
     # Dot length such that the rows fit in a bank.
     K = rng.randrange(1, max(2, min(40, BW // rows) + 1))
     # Weight row bytes (4-bit weights halve them).
-    rb, wmode = wpick(K)
+    rb, wmode = wpick(K, rows)
     # X stride and vector count that fit X and Y.
     xs = K * N if dw else K + rng.randrange(0, 4)
     if xs > (1 << X_AW) or N * ob > (1 << Y_AW):
@@ -163,11 +176,13 @@ for j in range(JOBS):
     nvec = rng.randrange(1, max(2, min((1 << X_AW) // xs, (1 << Y_AW) // (N * ob)) + 1))
     nvec = min(nvec, 12)
     wb = rng.randrange(0, BW - rows * rb + 1)
-    pb = rng.randrange(0, BP - rows + 1)
+    pb = rng.randrange(0, BP - rows - cbx(wmode) + 1)
     # Data, placed the way the runtime does.
     eng.bus.write_block(X_ADDR, rbytes(nvec * xs))
     eng.upload_w(wb, rbytes(N * rb), rb)
     eng.upload_p(pb, rparams(N, wild))
+    if wmode == MODE_CB:
+        eng.upload_cb(pb + rows, rbytes(16))
     # Quantisation fields.
     ioff = rng.randrange(-127, 129)
     zp = rng.randrange(-128, 128)
@@ -229,7 +244,7 @@ if WIN:
         if L is None:
             continue
         rows = (L["n"] + LANES - 1) // LANES
-        rb, wmode = wpick(L["k"])
+        rb, wmode = wpick(L["k"], rows)
         if rows * rb > BW or rows > BP or L["nvec"] * L["n"] > (1 << Y_AW):
             continue
         img = L["h"] * L["w"] * L["c"]
@@ -241,10 +256,12 @@ if WIN:
                            L["dm"], L["ow"], L["r0"], xbase)
         if win is None:
             continue
-        wb, pb = rng.randrange(0, BW - rows * rb + 1), rng.randrange(0, BP - rows + 1)
+        wb, pb = rng.randrange(0, BW - rows * rb + 1), rng.randrange(0, BP - rows - cbx(wmode) + 1)
         eng.bus.write_block(X_ADDR + xbase, rbytes(min(img, (1 << X_AW) - xbase)))
         eng.upload_w(wb, rbytes(L["n"] * rb), rb)
         eng.upload_p(pb, rparams(L["n"], rng.random() < 0.3))
+        if wmode == MODE_CB:
+            eng.upload_cb(pb + rows, rbytes(16))
         ioff, zp, lo, hi = rquant()
         full_job(L["k"], L["n"], L["nvec"], 0, wb, pb, ioff, zp, lo, hi,
                  MODE_WIN | wmode | (MODE_DW if L["dw"] else 0) | (MODE_OUTX if outx else 0), xbase, ybase, win)
@@ -253,13 +270,15 @@ elif FUSE:
         N, K = rng.randrange(1, 8), rng.randrange(1, 20)
         rows = (N + LANES - 1) // LANES
         nvec = rng.randrange(1, 5)
-        rb, wmode = wpick(K)
+        rb, wmode = wpick(K, rows)
         if rows * rb > BW or rows > BP:
             continue
         xbase, ybase = rng.randrange(0, 20), 100 + rng.randrange(0, 20)
         eng.bus.write_block(X_ADDR + xbase, rbytes(nvec * K))
         eng.upload_w(0, rbytes(N * rb), rb)
         eng.upload_p(0, rparams(N))
+        if wmode == MODE_CB:
+            eng.upload_cb(rows, rbytes(16))
         ioff, zp, lo, hi = rquant()
         full_job(K, N, nvec, K, 0, 0, ioff, zp, lo, hi, MODE_OUTX | wmode | (MODE_RAW if rng.random() < 0.2 else 0), xbase, ybase)
     # Output beyond X: must fail.
@@ -280,18 +299,20 @@ def queue_run(njobs, bad_at=None):
         raw = rng.random() < 0.15
         N = rng.randrange(1, 8)
         K = rng.randrange(1, 18)
-        rb, wmode = wpick(K)
         rows = (N + LANES - 1) // LANES
+        rb, wmode = wpick(K, rows)
         ob = 4 if raw else 1
         xs = K * N if dw else K
         nvec = rng.randrange(1, 4)
         # Does it still fit?
-        if (xa + nvec * xs > (1 << X_AW) or ya + nvec * N * ob > (1 << Y_AW) or wa + rows * rb > BW or pa + rows > BP):
+        if (xa + nvec * xs > (1 << X_AW) or ya + nvec * N * ob > (1 << Y_AW) or wa + rows * rb > BW or pa + rows + cbx(wmode) > BP):
             break
         # Data at this job's own place.
         eng.bus.write_block(X_ADDR + xa, rbytes(nvec * xs))
         eng.upload_w(wa, rbytes(N * rb), rb)
         eng.upload_p(pa, rparams(N, rng.random() < 0.3))
+        if wmode == MODE_CB:
+            eng.upload_cb(pa + rows, rbytes(16))
         ioff = rng.randrange(-127, 129)
         zp = rng.randrange(-128, 128)
         lo = rng.randrange(-128, 128)
@@ -304,7 +325,7 @@ def queue_run(njobs, bad_at=None):
         xa += nvec * xs
         ya += nvec * N * ob
         wa += rows * rb
-        pa += rows
+        pa += rows + cbx(wmode)
     # Write the descriptors (64 bytes per slot) and the count; then start.
     blob = b"".join(d + bytes(DESC_BYTES - len(d)) for d in descs)
     eng.bus.write_block(D_ADDR, blob)
@@ -357,23 +378,25 @@ def chain_run(nlayers):
         else:
             K, N, nvec, xs, win = h * w * c, rng.randrange(1, 7), 1, h * w * c, None
             mode, oh, ow_ = 0, 1, 1
-        rb, wmode = wpick(K)
-        mode |= wmode
         rows_ = (N + LANES - 1) // LANES
+        rb, wmode = wpick(K, rows_)
+        mode |= wmode
         ob = N * nvec
         # Where the outputs go: next free X bytes, or Y for the last layer when fusion is not needed.
         to_x = FUSE and (not last or not QUEUE or rng.random() < 0.3)
         ybase = xfree if to_x else 0
-        if (wa + rows_ * rb > BW or pa + rows_ > BP or K > (1 << X_AW) or xfree + ob > (1 << X_AW) or ob > (1 << Y_AW)
+        if (wa + rows_ * rb > BW or pa + rows_ + cbx(wmode) > BP or K > (1 << X_AW) or xfree + ob > (1 << X_AW) or ob > (1 << Y_AW)
                 or (not to_x and not last)):
             break
         eng.upload_w(wa, rbytes(N * rb), rb)
         eng.upload_p(pa, rparams(N))
+        if wmode == MODE_CB:
+            eng.upload_cb(pa + rows_, rbytes(16))
         ioff, zp, lo, hi = rquant()
         descs.append(descriptor_bytes(K, N, nvec, xs, wa, pa, ioff, zp, lo, hi, mode | (MODE_OUTX if to_x else 0), xcur, ybase, win))
         regions.append((to_x, ybase, ob))
         wa += rows_ * rb
-        pa += rows_
+        pa += rows_ + cbx(wmode)
         # The next layer reads this layer's outputs as an oh x ow_ x N image.
         xcur, xfree, h, w, c = ybase, xfree + ob, oh, ow_, N
         if not to_x:
@@ -438,4 +461,4 @@ words.append(0xFF << 24)
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "engine_vectors.hex"), "w") as f:
     f.write("\n".join("%08X" % (w & 0xFFFFFFFF) for w in words) + "\n")
 # Summary.
-print("wrote %d words, %d jobs (seed %d, lanes %d, rq_mode %d, queue %d, perf %d, win %d, fuse %d, w4 %d)" % (len(words), JOBS + 7, SEED, LANES, RQ_MODE, QUEUE, PERF, WIN, FUSE, W4))
+print("wrote %d words, %d jobs (seed %d, lanes %d, rq_mode %d, queue %d, perf %d, win %d, fuse %d, w4 %d, cb %d)" % (len(words), JOBS + 7, SEED, LANES, RQ_MODE, QUEUE, PERF, WIN, FUSE, W4, CB))

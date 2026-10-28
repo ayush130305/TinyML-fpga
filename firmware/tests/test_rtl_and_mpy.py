@@ -22,12 +22,12 @@ def _run(cmd, env=None, timeout=1800):
 
 
 # Environment selecting the engine build for run_sim.sh.
-def _env(lanes, rq, queue=0, perf=0, win=0, fuse=0, w4=0):
+def _env(lanes, rq, queue=0, perf=0, win=0, fuse=0, w4=0, cb=0):
     # Inherit the rest.
     e = dict(os.environ)
     # Build options.
     e["LANES"], e["RQ_MODE"], e["QUEUE"], e["PERF"] = str(lanes), str(rq), str(queue), str(perf)
-    e["WIN"], e["FUSE"], e["W4"] = str(win), str(fuse), str(w4)
+    e["WIN"], e["FUSE"], e["W4"], e["CB"] = str(win), str(fuse), str(w4), str(cb)
     return e
 
 
@@ -44,12 +44,15 @@ def test_tb_requant():
 @pytest.mark.skipif(not shutil.which("iverilog"), reason="Icarus Verilog not installed")
 @pytest.mark.parametrize("lanes,rq,queue,perf,win,fuse,w4", [(1, 0, 0, 0, 0, 0, 0), (1, 1, 0, 0, 1, 0, 0), (2, 0, 1, 0, 0, 1, 0),
                                                               (4, 1, 1, 1, 1, 1, 1), (8, 1, 0, 1, 1, 0, 1), (2, 1, 1, 0, 1, 1, 0),
-                                                              (1, 0, 0, 0, 0, 0, 1)])
+                                                              (1, 0, 0, 0, 0, 0, 1), (2, 1, 1, 0, 1, 1, 2)])
 def test_tb_engine(lanes, rq, queue, perf, win, fuse, w4):
+    # w4 = 2 means "4-bit weights and codebook" (a build with both).
+    cb = 1 if w4 == 2 else 0
+    w4 = 1 if w4 else 0
     # Fresh random vectors.
-    _run([sys.executable, "gen_engine_vectors.py", "7", "60", str(lanes), str(rq), str(queue), str(perf), str(win), str(fuse), str(w4)])
+    _run([sys.executable, "gen_engine_vectors.py", "7", "60", str(lanes), str(rq), str(queue), str(perf), str(win), str(fuse), str(w4), str(cb)])
     # Compile and run.
-    out = _run(["bash", "run_sim.sh", "engine"], _env(lanes, rq, queue, perf, win, fuse, w4))
+    out = _run(["bash", "run_sim.sh", "engine"], _env(lanes, rq, queue, perf, win, fuse, w4, cb))
     # Verdict line.
     assert "PASS tb_engine" in out, out[-2000:]
 

@@ -85,3 +85,23 @@ The accuracy cost is handled on the PC. `python -m tinyml_fpga convert M.tflite 
 Measured on the digits samples: `m_cnn` int4 `all` keeps the top-1 label on 100% of 40 test images (`transform.compare`). A runtime that meets a 4-bit layer on an engine without `HAS_W4` runs that layer in software, so the same `.tmf` works everywhere.
 
 Cost (engine only, Yosys LUT4): +48 with 1 lane (2,050 → 2,098), +87 with 4 lanes (3,047 → 3,134) for the nibble selectors and the row-stride logic; no extra RAM or multipliers.
+
+## v0.7: compressed weights with hardware decompression (codebook)
+
+`HAS_CB=1` stores a layer's weights as 4-bit **indices** into a 16-entry int8 table (MODE bit 5, `MODE_CB`). The indices are packed like the 4-bit weights (two per byte, rows of ceil(K/2) bytes), and a 16:1 selector in every lane replaces the nibble's sign extension with the table value, so decompression happens in the datapath at full speed. The table is not a new memory: it is one 16-byte **parameter record** placed right after the layer's own records in parameter bank 0 (local index `PBASE + ceil(N / LANES)`). At job start the engine spends 17 clocks copying it into a register file; a table that does not fit the bank is a job error.
+
+Compared with plain int4 the table is *fitted to the weights* (1-D k-means in `transform.to_codebook`), so the same 4 bits per weight give a smaller error, and no scale has to be folded into bias and multiplier: the table holds the original int8 values. The cost is 16 bytes per layer.
+
+```bash
+python -m tinyml_fpga convert M.tflite --codebook auto     # auto / all / layer numbers, like --int4
+```
+
+| m_cnn, all layers | .tmf bytes | weight error (RMS, % of weights) per layer |
+|---|---|---|
+| int8 | 3,565 | 0 |
+| int4 (uniform) | 2,882 | 6.5, 6.5, 9.1, 7.3 |
+| codebook | 2,964 | 5.0, 6.3, 8.5, 5.9 |
+
+`driver`: `eng.upload_cb(PBASE + rows, table)`; `Model` places and uploads tables itself, streams them with each channel chunk when weights do not fit, and runs a codebook layer in software on an engine without the feature. int4 and codebook layers mix freely with int8 ones in one model.
+
+Cost (engine only, Yosys LUT4): +261 with 1 lane (2,106 → 2,367, 129 more flip-flops for the table), +780 with 4 lanes (2,695 → 3,475) because every lane has its own selector. Use it where weight memory or accuracy at 4 bits matters more than LUTs; plain `HAS_W4` is the cheap option.
