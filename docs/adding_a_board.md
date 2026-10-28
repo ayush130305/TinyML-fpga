@@ -15,7 +15,10 @@ So a board only needs something that drives this bus:
 | Host link | Bus master (RTL) | Host side (Python) |
 |---|---|---|
 | USB-UART from a PC (any board) | `rtl/uart_bus.v`, ready-made in `rtl/tinyml_uart_top.v` | `backend="uart:PORT"` (pyserial) |
-| anything else (SPI or a parallel bus from an MCU, AXI from a soft CPU, …) | your bridge to the byte bus | a class with `write_block(addr, buf)` and `read_block(addr, n)`, passed as `load(path, backend=HwEngine(MyBus()))` |
+| SPI master (MCU, Linux board) | `rtl/spi_bus.v`, ready-made in `rtl/tinyml_spi_top.v` | `backend="spi:0.0"` or `McuSpiBus(spi, cs)` |
+| I2C master (MCU, Linux board) | `rtl/i2c_bus.v`, ready-made in `rtl/tinyml_i2c_top.v` | `backend="i2c:1:0x2A"` or `McuI2cBus(i2c)` |
+| CPU behind AXI4-Lite (Zynq, soft core) | `rtl/axil_bus.v`, ready-made in `rtl/tinyml_axil_top.v` | `backend="axi:0x40000000"` or `AxiLiteBus(mem)` |
+| anything else (a parallel bus from an MCU, …) | your bridge to the byte bus | a class with `write_block(addr, buf)` and `read_block(addr, n)`, passed as `load(path, backend=HwEngine(MyBus()))` |
 
 A custom bus class runs on CPython or MicroPython. Frames of up to 128 bytes are enough; the runtime never needs more per call.
 

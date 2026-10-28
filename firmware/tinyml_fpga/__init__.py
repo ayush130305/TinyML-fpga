@@ -8,13 +8,13 @@
 #                         by passing HwEngine(your_bus) as the backend.
 #
 #   import tinyml_fpga
-#   m = tinyml_fpga.load("model.tmf", backend="uart:COM5")    # "cpu", "sim", "uart:PORT", HwEngine(bus)
+#   m = tinyml_fpga.load("model.tmf", backend="uart:COM5")    # "cpu", "sim", "uart:PORT", "spi:0.0", "i2c:1", "axi:0x40000000", HwEngine(bus)
 #   probs = m.predict(sample)
 #
 # Nothing here imports numpy or the tflite schema at import time, so it loads on MicroPython.
 
 # Package version.
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 
 from .model import Model
 from .engine import CpuEngine, HwEngine, SimBus
@@ -32,12 +32,26 @@ def load(path, backend="cpu", **kw):
     elif isinstance(backend, str) and backend.startswith("uart:"):
         from .buses import UartBus
         engine = HwEngine(UartBus(backend[5:], **kw))
+    # SPI master (Linux spidev) to rtl/spi_bus.v: "spi:BUS.DEVICE", e.g. "spi:0.0"; kw: speed_hz.
+    elif isinstance(backend, str) and backend.startswith("spi:"):
+        from .buses import SpiBus
+        b, _, d = backend[4:].partition(".")
+        engine = HwEngine(SpiBus(int(b), int(d or 0), **kw))
+    # I2C master (Linux smbus2) to rtl/i2c_bus.v: "i2c:BUS" or "i2c:BUS:ADDR", e.g. "i2c:1:0x2A".
+    elif isinstance(backend, str) and backend.startswith("i2c:"):
+        from .buses import open_i2c
+        b, _, a = backend[4:].partition(":")
+        engine = HwEngine(open_i2c(int(b), int(a, 0) if a else 0x2A))
+    # CPU with the engine on AXI4-Lite (Linux /dev/mem): "axi:0x40000000" (physical base address).
+    elif isinstance(backend, str) and backend.startswith("axi:"):
+        from .buses import open_axi
+        engine = HwEngine(open_axi(int(backend[4:], 0), **kw))
     # A ready engine object (anything with upload_w / upload_p / run and the *_cap fields).
     elif hasattr(backend, "run"):
         engine = backend
     # Unknown name.
     else:
-        raise ValueError("unknown backend %r (use 'cpu', 'sim', 'uart:PORT' or an HwEngine)" % (backend,))
+        raise ValueError("unknown backend %r (use 'cpu', 'sim', 'uart:PORT', 'spi:B.D', 'i2c:BUS', 'axi:BASE' or an HwEngine)" % (backend,))
     # Build the model on it.
     return Model(path, engine)
 

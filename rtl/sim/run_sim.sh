@@ -3,6 +3,7 @@
 #   bash run_sim.sh               everything: requantisers, engine (4 builds), whole UART path (2 builds)
 #   bash run_sim.sh requant       tb_requant  (serial and pipelined requantiser vs the Python reference)
 #   bash run_sim.sh engine        tb_engine   (LANES=${LANES:-1} RQ_MODE=${RQ_MODE:-0} QUEUE=${QUEUE:-0} PERF=${PERF:-0}, uses engine_vectors.hex)
+#   bash run_sim.sh bus          tb_bus (BUS=1 SPI, 2 I2C, 3 AXI4-Lite; same options, uses system_vectors.hex)
 #   bash run_sim.sh uart          tb_uart_top (same options, uses system_vectors.hex)
 # Vectors: python3 gen_requant_vectors.py; python3 gen_engine_vectors.py [seed] [jobs] [lanes] [rq_mode] [queue] [perf];
 #          python3 gen_system_vectors.py [model.tflite] [runs] [lanes] [rq_mode] [queue] [perf]
@@ -36,7 +37,11 @@ run_bench() {
             iverilog -g2012 -P tb_uart_top.LANES=$l -P tb_uart_top.RQ_MODE=$q -P tb_uart_top.HAS_QUEUE=$u -P tb_uart_top.HAS_PERF=$f -P tb_uart_top.HAS_WIN=$w -P tb_uart_top.HAS_FUSE=$x -P tb_uart_top.HAS_CB=$c -P tb_uart_top.HAS_W4=$z -o tb_uart_top.vvp tb_uart_top.v \
                 $R/tinyml_uart_top.v $R/uart_bus.v $R/uart_rx.v $R/uart_tx.v $ENG
             vvp -n tb_uart_top.vvp | grep -v readmemh ;;
-        *) echo "unknown bench $t (requant | engine | uart)"; exit 1 ;;
+        bus)
+            iverilog -g2012 -P tb_bus.BUS=${BUS:-1} -P tb_bus.LANES=$l -P tb_bus.RQ_MODE=$q -P tb_bus.HAS_QUEUE=$u -P tb_bus.HAS_PERF=$f -P tb_bus.HAS_WIN=$w -P tb_bus.HAS_FUSE=$x -P tb_bus.HAS_W4=$z -P tb_bus.HAS_CB=$c -o tb_bus.vvp tb_bus.v \
+                $R/tinyml_spi_top.v $R/tinyml_i2c_top.v $R/tinyml_axil_top.v $R/spi_bus.v $R/i2c_bus.v $R/axil_bus.v $ENG
+            vvp -n tb_bus.vvp | grep -v readmemh ;;
+        *) echo "unknown bench $t (requant | engine | uart | bus)"; exit 1 ;;
     esac
 }
 
@@ -60,6 +65,11 @@ if [ $# -eq 0 ]; then
     # A codebook model through the UART bridge.
     python3 gen_system_vectors.py ../../firmware/tests/models/m_cnn.tflite 2 2 1 1 0 1 1 0 0 1 1 > /dev/null
     run_bench uart 2 1 1 0 1 1 0 1
+    # SPI, I2C and AXI4-Lite bridges: a whole inference through each (plain and fully featured engines).
+    python3 gen_system_vectors.py ../../firmware/tests/models/m_cnn.tflite 1 1 0 0 0 0 0 0 > /dev/null
+    for b in 1 2 3; do BUS=$b run_bench bus 1 0 0 0 0 0 0 0; done
+    python3 gen_system_vectors.py ../../firmware/tests/models/m_cnn.tflite 1 2 1 1 0 1 1 0 > /dev/null
+    for b in 1 2 3; do BUS=$b run_bench bus 2 1 1 0 1 1 0 0; done
 else
     for t in "$@"; do run_bench "$t" "$LANES" "$RQ_MODE" "$QUEUE" "$PERF" "$WIN" "$FUSE" "$W4" "$CB"; done
 fi

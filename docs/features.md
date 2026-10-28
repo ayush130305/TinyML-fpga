@@ -105,3 +105,27 @@ python -m tinyml_fpga convert M.tflite --codebook auto     # auto / all / layer 
 `driver`: `eng.upload_cb(PBASE + rows, table)`; `Model` places and uploads tables itself, streams them with each channel chunk when weights do not fit, and runs a codebook layer in software on an engine without the feature. int4 and codebook layers mix freely with int8 ones in one model.
 
 Cost (engine only, Yosys LUT4): +261 with 1 lane (2,106 → 2,367, 129 more flip-flops for the table), +780 with 4 lanes (2,695 → 3,475) because every lane has its own selector. Use it where weight memory or accuracy at 4 bits matters more than LUTs; plain `HAS_W4` is the cheap option.
+
+## v0.8: SPI, I2C and AXI4-Lite buses
+
+The engine's byte bus (`bus_addr`, `wr`, `wdata`, `rd`, `rdata`) now has four bridges. All carry the same register map, so any model runs unchanged on any of them; only the link differs. Each has a ready-made top (bridge + engine, same parameters as `tinyml_uart_top`) and a Python class.
+
+| Link | Bridge / top | Python | Rules |
+|---|---|---|---|
+| UART | `uart_bus.v` / `tinyml_uart_top.v` | `UartBus`, `McuUartBus` | write frames are acknowledged with `0x55` |
+| SPI (mode 0) | `spi_bus.v` / `tinyml_spi_top.v` | `SpiBus` (spidev), `McuSpiBus` | SCK ≤ clk/6; one chip-select frame per access; reads send one dummy byte before the data |
+| I2C | `i2c_bus.v` / `tinyml_i2c_top.v` | `I2cBus` (smbus2), `McuI2cBus` | 7-bit address (`I2C_ADDR`, default `0x2A`); SCL ≤ clk/16; no clock stretching; reads use a repeated start |
+| AXI4-Lite | `axil_bus.v` / `tinyml_axil_top.v` | `AxiLiteBus` (mmap) | word at AXI address A = bytes A..A+3, little endian; `WSTRB` selects the bytes written |
+
+Frames (SPI and I2C): `[cmd][addr_hi][addr_lo][data...]`; the address auto-increments, as on UART. SPI reads clock out `[cmd|0x80][addr_hi][addr_lo][dummy]` followed by the n reply bytes; I2C reads write the two address bytes, restart, and read. After a read the bridge has already fetched one byte ahead, so the engine sees one extra read strobe past the last byte (no register has a read side effect).
+
+```python
+m = tinyml_fpga.load("m.tmf", backend="spi:0.0", speed_hz=4000000)   # Linux, spidev
+m = tinyml_fpga.load("m.tmf", backend="i2c:1:0x2A")                  # Linux, smbus2
+m = tinyml_fpga.load("m.tmf", backend="axi:0x40000000")              # Linux, /dev/mem
+m = tinyml_fpga.load("m.tmf", backend=tinyml_fpga.HwEngine(McuSpiBus(spi, cs)))   # MicroPython
+```
+
+Verification: `rtl/sim/tb_bus.v` replays a recorded inference of `m_cnn` through each bridge on a plain engine and on a fully featured one (2 lanes, pipelined requantiser, queue, window, fusion) and checks every byte read back. `tests/test_buses.py` checks the Python classes against Python models of the frame rules, including a full model run on each.
+
+Cost (bridge only, Yosys LUT4): UART 194, SPI 88, I2C 104, AXI4-Lite 125.
