@@ -20,10 +20,12 @@ for v in 0..NVEC-1:                 # input vectors (one per output pixel for co
 ```
 
 - **Memories:** four simple dual-port byte RAMs with registered reads: X (inputs), W (weights), P (16 bytes per channel: bias i32, multiplier i32, shift i8), and Y (outputs). Sizes are parameters (`*_AW`) and are reported in read-only registers, so the driver adapts to any build.
-- **Datapath:** one 9×8-bit signed MAC per clock, 3-stage pipeline (RAM read → product register → accumulate).
-- **Requantiser (`tmf_requant.v`):** 32-step shift-and-add multiply, then a rounding add, then an arithmetic shift in 8-bit and 1-bit steps, then the zero point and an int8 clamp. One shared 64-bit adder. This is TFLite's `MultiplyByQuantizedMultiplier` in its single-rounding form, the variant LiteRT executes (verified; the older double-rounding form differs by 1 LSB on about 0.3% of outputs).
+- **Datapath:** `LANES` (1, 2, 4 or 8) MAC lanes, each one 9×8-bit signed multiply per clock in a 3-stage pipeline (RAM read → product register → accumulate). The lanes compute consecutive output channels of the same input vector, so they share one X read stream and each reads its own weight bank (`tmf_lane.v`).
+- **Banked W and P:** with `LANES` > 1 the weight and parameter RAMs are split into equal banks selected by the top address bits. Channel `o` lives in bank `o % LANES`, local row `o / LANES`; `WBASE` and `PBASE` are local offsets. `HwEngine.upload_w/upload_p` hide this, and the runtime plans residency per bank.
+- **Output unit:** a finished group's accumulators, multipliers and shifts are copied into staging registers and a background unit requantises and writes Y while the next group is already being multiplied. The requantiser's latency is hidden whenever a group's multiply (K + 16 clocks) is longer than its requantisation.
+- **Requantiser (`RQ_MODE`):** `0` = `tmf_requant.v`, 32-step shift-and-add multiply, rounding add, arithmetic shift in 8-bit and 1-bit steps, zero point and clamp, one shared 64-bit adder, no multiplier (37 + ts/8 + ts%8 clocks per result). `1` = `tmf_requant_pipe.v`, four unsigned 16×16 multipliers and a two-step barrel shifter, one result per clock, latency 10. Both are TFLite's `MultiplyByQuantizedMultiplier` in its single-rounding form, the variant LiteRT executes (verified; the older double-rounding form differs by 1 LSB on about 0.3% of outputs), and `tb_requant.v` checks them against the Python reference.
 - **Safety:** before every output the engine checks that all X/W/P/Y accesses are in range; a bad job stops with STATUS = error | done instead of corrupting memory. Bus writes are ignored while a job runs.
-- **Cost:** `K + 54 + ts/8 + ts%8` clocks per output (raw mode `K + 20`). The Python register model computes the same number, and the testbench checks it.
+- **Cost:** a group of `LANES` channels takes `K + 16` clocks when the output unit keeps up (1 check, 10 parameter fetches, 1 load, K MACs, 3 drain, 1 step). `engine.job_cycles` models the whole job exactly, including the waits for the output unit, and the testbench checks it against the RTL for every random job.
 
 ## Register map (byte bus)
 
@@ -33,8 +35,8 @@ for v in 0..NVEC-1:                 # input vectors (one per output pixel for co
 | 0x102 | N | u16 RW | output channels |
 | 0x104 | NVEC | u16 RW | vectors per job |
 | 0x106 | XSTRIDE | u16 RW | bytes between vectors in X |
-| 0x108 | WBASE | u16 RW | byte offset of channel 0's weights |
-| 0x10A | PBASE | u16 RW | channel index of channel 0's parameters |
+| 0x108 | WBASE | u16 RW | local (per-bank) byte offset of channel 0's weights |
+| 0x10A | PBASE | u16 RW | local (per-bank) record index of channel 0's parameters |
 | 0x10C | IN_OFF | s16 RW | −input zero point |
 | 0x10E | OUT_ZP | s8 RW | output zero point |
 | 0x10F / 0x110 | ACT_MIN / ACT_MAX | s8 RW | clamp |
@@ -42,7 +44,7 @@ for v in 0..NVEC-1:                 # input vectors (one per output pixel for co
 | 0x11F | CTRL | W | 0x01 start, 0x80 clear status (last byte of the config frame, so one frame configures and starts) |
 | 0x120 | STATUS | R | bit0 busy, bit1 done, bit2 error |
 | 0x121 | CYCLES | u32 R | clocks of the last job |
-| 0x130–0x135 | MAGIC 0x4D, VERSION, W_AW, X_AW, Y_AW, P_AW | R | identification and sizes |
+| 0x130–0x137 | MAGIC 0x4D, VERSION (2), W_AW, X_AW, Y_AW, P_AW, LANES, FEATURES | R | identification and sizes (W_AW/P_AW count all banks together; FEATURES bit0 = pipelined requantiser) |
 | 0x1000 / 0x2000 / 0x3000 / 0x8000 | X / Y / P / W windows | | Y is read-only from the bus |
 
 Addresses below 0x100 are unused by the engine, so it can share a bus with other registers.

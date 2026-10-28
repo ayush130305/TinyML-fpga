@@ -1,0 +1,7 @@
+{
+  "note": "Scale factors from Yosys iCE40 counts to Efinity Trion counts, from one measured design: the v0.2.0 default build (tinyml_uart_top, UART bridge + engine, W_AW 12, X_AW 10, Y_AW 8, P_AW 10). Efinity reported 1536 LUT + 264 ADD (= 1800 logic elements), 878 FF, 13 RAM_5K, 1 multiplier. Yosys (synth_ice40 -dsp) reported 2059 LUT4, 1076 FF, 13 RAM40_4K, 1 MAC16 for the same RTL.",
+  "le_per_yosys_lut4": 0.874,
+  "ff_per_yosys_ff": 0.816,
+  "efinity_default_le": 1800,
+  "yosys_default_lut4": 2059
+}

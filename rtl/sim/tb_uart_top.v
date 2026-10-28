@@ -6,7 +6,10 @@
 `timescale 1ns/1ps
 `default_nettype none
 
-module tb_uart_top;
+module tb_uart_top #(
+    parameter LANES   = 1,               // engine lanes under test (must match gen_system_vectors.py)
+    parameter RQ_MODE = 0                // requantiser under test (must match gen_system_vectors.py)
+);
 
     // Clocks per UART bit in this simulation (100 MHz / 12.5 Mbaud).
     localparam CPB = 8;
@@ -37,7 +40,7 @@ module tb_uart_top;
     always #5 clk = ~clk;
 
     // This contains the instantiation for the board top
-    tinyml_uart_top #(.CLK_HZ(100000000), .BAUD(12500000), .W_AW(12), .X_AW(10), .Y_AW(8), .P_AW(10)) dut (
+    tinyml_uart_top #(.CLK_HZ(100000000), .BAUD(12500000), .W_AW(12), .X_AW(10), .Y_AW(8), .P_AW(10), .LANES(LANES), .RQ_MODE(RQ_MODE)) dut (
         .clk(clk), .rst(1'b0), .uart_rx(rx), .uart_tx(tx), .status(led));
 
     // Send one byte to the FPGA (start bit, 8 data bits LSB first, stop bit).

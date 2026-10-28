@@ -17,7 +17,12 @@
 #   0x120 STATUS   u8    bit0 busy, bit1 done, bit2 error
 #   0x121 CYCLES   u32   clocks the last job took
 #   0x130 MAGIC 0x4D, 0x131 VERSION, 0x132 W_AW, 0x133 X_AW, 0x134 Y_AW, 0x135 P_AW  (read-only)
+#   0x136 LANES, 0x137 FEATURES (bit0: pipelined requantiser)                         (version 2 builds)
 #   0x1000 X   0x2000 Y   0x3000 P   0x8000 W      memory windows (sizes are 2^*_AW bytes)
+#
+# With LANES > 1 the W and P windows are split into LANES equal banks selected by the top address bits.
+# Channel o of a layer lives in bank o % LANES at local row o // LANES; WBASE and PBASE are local (per-bank)
+# offsets. upload_w / upload_p below do this layout, callers only pass whole layers.
 
 import struct
 
@@ -31,8 +36,12 @@ R_MAGIC = 0x130
 X_ADDR, Y_ADDR, P_ADDR, W_ADDR = 0x1000, 0x2000, 0x3000, 0x8000
 # Engine magic number.
 MAGIC = 0x4D
-# Register-map version this driver speaks.
-VERSION = 1
+# Register-map versions this driver speaks (1: single lane, 2: adds LANES and FEATURES).
+VERSIONS = (1, 2)
+# Version written by the current RTL and SimBus.
+VERSION = 2
+# FEATURES bits.
+F_RQ_PIPE = 1
 # STATUS bits.
 BUSY, DONE, ERR = 1, 2, 4
 # MODE bits.
@@ -53,6 +62,8 @@ def config_frame(K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act
 class CpuEngine:
     # Name shown in summaries.
     name = "cpu"
+    # The software engine has one contiguous weight store.
+    lanes = 1
 
     # Unlimited capacities (in practice: RAM).
     def __init__(self, w_cap=1 << 24, x_cap=1 << 24, y_cap=1 << 24, p_cap=1 << 20):
@@ -65,17 +76,17 @@ class CpuEngine:
         # Cycle count is not meaningful here.
         self.cycles = 0
 
-    # Store weight bytes at a byte offset.
-    def upload_w(self, off, data):
+    # Store weight bytes at a byte offset (k, the row length, is only needed by banked hardware).
+    def upload_w(self, off, data, k=None):
         # Grow the store if needed.
         if len(self.W) < off + len(data):
             self.W += bytes(off + len(data) - len(self.W))
         # Copy.
         self.W[off:off + len(data)] = data
 
-    # Store parameter records starting at a channel index.
+    # Store parameter records starting at a record index.
     def upload_p(self, ch, data):
-        # Byte offset of the channel.
+        # Byte offset of the record.
         off = ch * PARAM_BYTES
         # Grow the store if needed.
         if len(self.P) < off + len(data):
@@ -105,32 +116,63 @@ class HwEngine:
         self.bus = bus
         # Status polls before a job is declared hung.
         self.timeout_polls = timeout_polls
-        # Identification block.
-        ident = bus.read_block(R_MAGIC, 6)
+        # Identification block (the extra bytes read as 0 on version 1 builds).
+        ident = bus.read_block(R_MAGIC, 8)
         # Wrong or missing bitstream.
         if ident[0] != MAGIC:
             raise RuntimeError("tinyml engine not found (magic 0x%02X, expected 0x%02X): is the bitstream loaded?" % (ident[0], MAGIC))
         # Newer register map than this driver knows.
-        if ident[1] != VERSION:
-            raise RuntimeError("engine register map v%d, driver speaks v%d" % (ident[1], VERSION))
-        # Memory sizes from the address widths.
-        self.w_cap, self.x_cap, self.y_cap = 1 << ident[2], 1 << ident[3], 1 << ident[4]
-        # Parameter capacity in channels.
-        self.p_cap = (1 << ident[5]) // PARAM_BYTES
+        if ident[1] not in VERSIONS:
+            raise RuntimeError("engine register map v%d, driver speaks v%s" % (ident[1], "/".join(str(v) for v in VERSIONS)))
+        # Parallel output channels (1 on older builds).
+        self.lanes = max(1, ident[6]) if ident[1] >= 2 else 1
+        # Optional hardware features.
+        self.features = ident[7] if ident[1] >= 2 else 0
+        # Weight bytes and parameter records per bank (the whole memory when there is one lane).
+        self.w_cap = (1 << ident[2]) // self.lanes
+        self.p_cap = ((1 << ident[5]) // PARAM_BYTES) // self.lanes
+        # Input and output memories are shared by all lanes.
+        self.x_cap, self.y_cap = 1 << ident[3], 1 << ident[4]
+        # Bytes per bank window.
+        self._wbank, self._pbank = self.w_cap, self.p_cap * PARAM_BYTES
         # Clock count of the last job.
         self.cycles = 0
         # Clear any stale status.
         bus.write_block(R_CTRL, bytes([CMD_CLEAR]))
 
-    # Write weight bytes into W.
-    def upload_w(self, off, data):
-        # One (chunked) block write.
-        self.bus.write_block(W_ADDR + off, data)
+    # Write the weight rows of channels 0.. (k bytes each, consecutive in data) at local byte offset off.
+    def upload_w(self, off, data, k=None):
+        # One lane: a single contiguous block.
+        if self.lanes == 1:
+            self.bus.write_block(W_ADDR + off, data)
+            return
+        # Several lanes: channel c goes to bank c % lanes, local row c // lanes; one block per bank.
+        n = len(data) // k
+        for b in range(self.lanes):
+            # Rows of this bank, back to back (in MicroPython this stays bytes-only).
+            rows = bytearray()
+            for c in range(b, n, self.lanes):
+                rows += data[c * k:(c + 1) * k]
+            # Skip banks that got no row.
+            if rows:
+                self.bus.write_block(W_ADDR + b * self._wbank + off, rows)
 
-    # Write parameter records into P.
-    def upload_p(self, ch, data):
-        # One (chunked) block write.
-        self.bus.write_block(P_ADDR + ch * PARAM_BYTES, data)
+    # Write parameter records of channels 0.. at local record index rec.
+    def upload_p(self, rec, data):
+        # One lane: a single contiguous block.
+        if self.lanes == 1:
+            self.bus.write_block(P_ADDR + rec * PARAM_BYTES, data)
+            return
+        # Several lanes: record c goes to bank c % lanes, local record rec + c // lanes.
+        n = len(data) // PARAM_BYTES
+        for b in range(self.lanes):
+            # Records of this bank, back to back.
+            recs = bytearray()
+            for c in range(b, n, self.lanes):
+                recs += data[c * PARAM_BYTES:(c + 1) * PARAM_BYTES]
+            # Skip banks that got no record.
+            if recs:
+                self.bus.write_block(P_ADDR + b * self._pbank + rec * PARAM_BYTES, recs)
 
     # Run one job on the FPGA and return the outputs as a list of ints.
     def run(self, K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, x):
@@ -165,14 +207,59 @@ class HwEngine:
         return to_i8_list(bus.read_block(Y_ADDR, nvec * N))
 
 
+# Clocks the engine takes for a job (the exact model of rtl/tmf_engine.v).
+#   shifts : list of the N channels' TFLite shifts          lanes / rq_mode : the build's LANES and RQ_MODE
+# Each group of `lanes` channels (one channel for depthwise) costs 1 check + 10 parameter fetches + 1 load +
+# K multiply-accumulates + 3 pipeline drain + 1 step = K + 16 clocks when the output unit keeps up. The output
+# unit (requantiser + Y writes) works on the finished group while the next one is computed, and the next
+# group's hand-over waits until it is free.
+def job_cycles(K, N, nvec, shifts, mode, lanes=1, rq_mode=0):
+    # Clock of the current group's check state, and first clock the output unit is free.
+    t, free = 0, 0
+    # Raw mode flag and depthwise flag.
+    raw, dw = bool(mode & MODE_RAW), bool(mode & MODE_DW)
+    # Every vector.
+    for _ in range(nvec):
+        # Channel counter inside the vector.
+        o = 0
+        while o < N:
+            # Channels in this group.
+            cnt = 1 if dw else min(lanes, N - o)
+            # Hand-over clock: the MAC pipeline is empty K + 14 clocks after the check, and the unit must be idle.
+            hand = max(t + K + 14, free)
+            # Raw: four byte writes per channel.
+            if raw:
+                free = hand + 1 + 4 * cnt
+            # Pipelined requantiser: one issue per clock, 10 clocks latency.
+            elif rq_mode == 1:
+                free = hand + cnt + 11
+            # Serial requantiser: one result at a time, 37 + ts/8 + ts%8 clocks each.
+            else:
+                s = hand + 1
+                for i in range(cnt):
+                    ts = 31 - shifts[o + i]
+                    q = ts // 8 + ts % 8
+                    last = (s, q)
+                    s += 37 + q
+                free = last[0] + 38 + last[1]
+            # Next group: hand-over, step, check.
+            t = hand + 2
+            # Next channels.
+            o += cnt
+    # The job ends when the last group is handed over, stepped, and the output unit is empty.
+    return max(t, free) + 1
+
+
 # Python model of the RTL behind the byte bus: lets the hardware driver run on a PC with no FPGA.
-# It is register-accurate (same map, same STATUS behaviour) and is what the RTL testbench is checked against.
+# It is register-accurate (same map, same STATUS behaviour, same clock counts) and is what the RTL
+# testbench is checked against.
 class SimBus:
     # Default sizes match the tmf_engine.v defaults.
-    def __init__(self, w_aw=12, x_aw=10, y_aw=8, p_aw=10):
-        # Address widths.
+    def __init__(self, w_aw=12, x_aw=10, y_aw=8, p_aw=10, lanes=1, rq_mode=0):
+        # Address widths and build options.
         self.aw = (w_aw, x_aw, y_aw, p_aw)
-        # Memories.
+        self.lanes, self.rq_mode = lanes, rq_mode
+        # Memories (W and P are bank-major: bank b starts at b * size / lanes).
         self.W, self.X, self.Y, self.P = bytearray(1 << w_aw), bytearray(1 << x_aw), bytearray(1 << y_aw), bytearray(1 << p_aw)
         # Config registers 0x100..0x11F.
         self.cfg = bytearray(0x20)
@@ -233,8 +320,8 @@ class SimBus:
         if R_CYCLES <= a < R_CYCLES + 4:
             return (self.cycle_count >> (8 * (a - R_CYCLES))) & 0xFF
         # Identification block.
-        if R_MAGIC <= a < R_MAGIC + 6:
-            return (MAGIC, VERSION) [a - R_MAGIC] if a < R_MAGIC + 2 else self.aw[a - R_MAGIC - 2]
+        if R_MAGIC <= a < R_MAGIC + 8:
+            return (MAGIC, VERSION) [a - R_MAGIC] if a < R_MAGIC + 2 else (self.aw + (self.lanes, F_RQ_PIPE if self.rq_mode == 1 else 0))[a - R_MAGIC - 2]
         # Memories.
         m = self._mem(a)
         # Mapped byte or zero.
@@ -259,22 +346,47 @@ class SimBus:
 
     # Execute a job the way tmf_engine.v does, including its error checks.
     def _start(self):
-        # A start while busy is an error (cannot happen here because jobs finish instantly).
+        # Decode the configuration block.
         K, N, nvec, xs, wb, pb, ioff, zp, amin, amax, mode = struct.unpack_from("<HHHHHHhbbbB", self.cfg, 0)
-        # Output bytes per result.
+        # Lanes and bank geometry.
+        L = self.lanes
+        bw, bp = len(self.W) // L, len(self.P) // L
+        # Output bytes per result and depthwise flag.
         ob = 4 if mode & MODE_RAW else 1
-        # Highest X byte the job touches.
-        xmax = (nvec - 1) * xs + (N * K if mode & MODE_DW else K)
-        # Same checks as the RTL: empty job or any memory overrun.
-        if (K == 0 or N == 0 or nvec == 0 or xmax > len(self.X) or wb + N * K > len(self.W)
-                or (pb + N) * PARAM_BYTES > len(self.P) or nvec * N * ob > len(self.Y)):
-            # Error and done, nothing computed.
+        dw = bool(mode & MODE_DW)
+        # Empty job: error and done, nothing computed.
+        if K == 0 or N == 0 or nvec == 0:
             self.status = ERR | DONE
             return
+        # Same per-group bounds checks as the RTL, walking the groups in order.
+        ys, bad = 0, False
+        for v in range(nvec):
+            o = 0
+            while o < N and not bad:
+                # Group size, local weight row, local parameter record and X slice of this group.
+                cnt = 1 if dw else min(L, N - o)
+                row = o // L
+                xrow = v * xs + (o * K if dw else 0)
+                # Memory limits.
+                if xrow + K > len(self.X) or wb + row * K + K > bw or (pb + row) * PARAM_BYTES + PARAM_BYTES > bp or ys + cnt * ob > len(self.Y):
+                    bad = True
+                ys += cnt * ob
+                o += cnt
+            if bad:
+                break
+        # Error: nothing is reported beyond the status.
+        if bad:
+            self.status = ERR | DONE
+            return
+        # Gather the channels' weight rows and parameter records from their banks.
+        w, p = bytearray(), bytearray()
+        for o in range(N):
+            # Bank and local row of channel o.
+            b, r = o % L, o // L
+            w += self.W[b * bw + wb + r * K: b * bw + wb + (r + 1) * K]
+            p += self.P[b * bp + (pb + r) * PARAM_BYTES: b * bp + (pb + r + 1) * PARAM_BYTES]
         # Compute with the shared kernel.
-        y = dot_requant(to_i8_list(self.X), to_i8_list(self.W[wb:wb + N * K]),
-                        self.P[pb * PARAM_BYTES:(pb + N) * PARAM_BYTES], K, N, nvec, xs, ioff, zp, amin, amax,
-                        dw=bool(mode & MODE_DW), raw=bool(mode & MODE_RAW))
+        y = dot_requant(to_i8_list(self.X), to_i8_list(w), p, K, N, nvec, xs, ioff, zp, amin, amax, dw=dw, raw=bool(mode & MODE_RAW))
         # Store results.
         if mode & MODE_RAW:
             # Little-endian int32 words.
@@ -283,17 +395,8 @@ class SimBus:
             # Bytes.
             for i, v in enumerate(y):
                 self.Y[i] = v & 0xFF
-        # Exact clock count of tmf_engine.v: per output 1 check + 10 param + 1 init + K MACs + 3 drain + 1 next,
-        # plus 4 raw byte writes, or the requantiser: 38 + ts/8 + ts%8 clocks with ts = 31 - shift.
-        cyc = 0
-        for o in range(N):
-            # Shift of this channel.
-            sh = struct.unpack_from("<b", self.P, (pb + o) * PARAM_BYTES + 8)[0]
-            # Requantiser shift distance.
-            ts = 31 - sh
-            # Clocks for this channel's output.
-            cyc += K + (20 if mode & MODE_RAW else 54 + ts // 8 + ts % 8)
-        # Same for every vector.
-        self.cycle_count = nvec * cyc
+        # Exact clock count.
+        shifts = [struct.unpack_from("<b", p, o * PARAM_BYTES + 8)[0] for o in range(N)]
+        self.cycle_count = job_cycles(K, N, nvec, shifts, mode, L, self.rq_mode)
         # Done.
         self.status = DONE

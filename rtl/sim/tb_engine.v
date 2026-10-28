@@ -6,7 +6,10 @@
 `timescale 1ns/1ps
 `default_nettype none
 
-module tb_engine;
+module tb_engine #(
+    parameter LANES   = 1,               // engine lanes under test (must match gen_engine_vectors.py)
+    parameter RQ_MODE = 0                // requantiser under test (must match gen_engine_vectors.py)
+);
 
     // Clock.
     reg         clk = 1'b0;
@@ -46,7 +49,7 @@ module tb_engine;
     always #20 clk = ~clk;
 
     // This contains the instantiation for the device under test
-    tmf_engine #(.W_AW(10), .X_AW(9), .Y_AW(8), .P_AW(8)) dut (
+    tmf_engine #(.W_AW(10), .X_AW(9), .Y_AW(8), .P_AW(8), .LANES(LANES), .RQ_MODE(RQ_MODE)) dut (
         .clk(clk), .rst(rst), .bus_addr(addr), .bus_wr(wr), .bus_wdata(wdata), .bus_rd(rd),
         .bus_rdata(rdata), .status_o(status));
 
@@ -161,8 +164,8 @@ module tb_engine;
             pc = pc + 1;
         end
         // Verdict.
-        if (errors == 0) $display("PASS tb_engine: %0d jobs, %0d checks", jobs, checks);
-        else             $display("FAIL tb_engine: %0d errors in %0d checks", errors, checks);
+        if (errors == 0) $display("PASS tb_engine (lanes %0d, rq_mode %0d): %0d jobs, %0d checks", LANES, RQ_MODE, jobs, checks);
+        else             $display("FAIL tb_engine (lanes %0d, rq_mode %0d): %0d errors in %0d checks", LANES, RQ_MODE, errors, checks);
         $finish;
     end
 

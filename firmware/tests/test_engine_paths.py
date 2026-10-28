@@ -37,12 +37,16 @@ def _inputs(m, n, seed=0):
 
 # Small engines give the same outputs as the software engine.
 @pytest.mark.parametrize("aw", [(12, 10, 8, 10), (8, 9, 6, 6), (6, 6, 4, 5), (10, 4, 8, 10)])
+@pytest.mark.parametrize("lanes", [1, 2, 4])
 @pytest.mark.parametrize("name", ["m_fc", "m_cnn", "m_avg"])
-def test_small_engines(tmfs, name, aw):
+def test_small_engines(tmfs, name, aw, lanes):
+    # Banks need at least one parameter record each.
+    if (1 << aw[3]) // 16 < lanes:
+        pytest.skip("P RAM too small for this many lanes")
     # Reference.
     ref = Model(tmfs[name], CpuEngine())
     # Engine with tiny memories (streaming, chunking and fallback kick in).
-    m = Model(tmfs[name], HwEngine(SimBus(*aw)))
+    m = Model(tmfs[name], HwEngine(SimBus(*aw, lanes=lanes)))
     # Same results on random inputs.
     for x in _inputs(ref, 4):
         assert m.invoke(x) == ref.invoke(x)

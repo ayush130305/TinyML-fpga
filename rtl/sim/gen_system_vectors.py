@@ -6,7 +6,7 @@
 #   11_AAAA_LL  read frame of LL+1 bytes at AAAA, followed by LL+1 words with the expected bytes
 #   12_000000   poll STATUS (0x120) until done, expect no error
 #   FF_000000   end
-# usage: python3 gen_system_vectors.py [model.tflite] [inferences]
+# usage: python3 gen_system_vectors.py [model.tflite] [inferences] [lanes] [rq_mode]
 
 import os
 import sys
@@ -20,8 +20,9 @@ from tinyml_fpga.engine import HwEngine, SimBus, R_STATUS
 from tinyml_fpga.model import Model
 from tinyml_fpga import kernels as kn
 
-# Engine RAM sizes of the testbench top (the tmf_engine.v defaults).
-AW = dict(w_aw=12, x_aw=10, y_aw=8, p_aw=10)
+# Engine RAM sizes of the testbench top (the tmf_engine.v defaults) and build options.
+AW = dict(w_aw=12, x_aw=10, y_aw=8, p_aw=10, lanes=int(sys.argv[3]) if len(sys.argv) > 3 else 1,
+          rq_mode=int(sys.argv[4]) if len(sys.argv) > 4 else 0)
 # Model and inference count.
 MODEL = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "tests", "models", "m_cnn.tflite")
 RUNS = int(sys.argv[2]) if len(sys.argv) > 2 else 2

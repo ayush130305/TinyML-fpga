@@ -17,6 +17,7 @@ module tmf_requant (
     input  wire signed [7:0]  zp,       // output zero point
     input  wire signed [7:0]  act_min,  // clamp low
     input  wire signed [7:0]  act_max,  // clamp high
+    output wire               ready,    // 1 while idle: a new operand set can be started
     output reg                done,     // one-clock pulse: y is valid
     output reg  signed [7:0]  y         // int8 result
 );
@@ -31,6 +32,8 @@ module tmf_requant (
 
     // Current phase.
     reg [2:0]         ph;
+    // Ready for a new start while idle.
+    assign ready = (ph == P_IDLE);
     // Running 64-bit product / sum.
     reg signed [63:0] p;
     // Multiplicand, shifted left each step (sign-extended accumulator).

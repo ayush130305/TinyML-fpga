@@ -21,8 +21,8 @@ A custom bus class runs on CPython or MicroPython. Frames of up to 128 bytes are
 
 ## Using the UART top on a board
 
-1. Add `rtl/tinyml_uart_top.v`, `rtl/uart_bus.v`, `rtl/uart_rx.v`, `rtl/uart_tx.v`, `rtl/tmf_engine.v`, `rtl/tmf_requant.v` and `rtl/tmf_ram.v` to your FPGA project, with `tinyml_uart_top` as the top module (or instantiate it from your own top).
-2. Set the parameters: `CLK_HZ` (your clock), `BAUD`, and the RAM sizes (`W_AW` ≤ 15, `X_AW`/`Y_AW`/`P_AW` ≤ 12) to what the device has.
+1. Add `rtl/tinyml_uart_top.v`, `rtl/uart_bus.v`, `rtl/uart_rx.v`, `rtl/uart_tx.v`, `rtl/tmf_engine.v`, `rtl/tmf_lane.v`, `rtl/tmf_rq.v`, `rtl/tmf_requant.v`, `rtl/tmf_requant_pipe.v` (only needed with `RQ_MODE=1`) and `rtl/tmf_ram.v` to your FPGA project, with `tinyml_uart_top` as the top module (or instantiate it from your own top).
+2. Set the parameters: `CLK_HZ` (your clock), `BAUD`, the RAM sizes (`W_AW` ≤ 15, `X_AW`/`Y_AW`/`P_AW` ≤ 12) to what the device has, and optionally `LANES` (1, 2, 4, 8) and `RQ_MODE` (0 serial, 1 pipelined; use 1 with several lanes). Sizes are totals over all banks.
 3. In your vendor's constraint file, connect `clk`, `rst` (active high, e.g. a button), `uart_rx`, `uart_tx` and optionally `status[2:0]` to LEDs, and add the clock constraint.
 4. On the PC: `tinyml_fpga.load("model.tmf", backend="uart:COM5", baud=921600)`. The driver reads the RAM sizes from the engine, so no software changes are needed.
 

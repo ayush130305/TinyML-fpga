@@ -113,16 +113,20 @@ class Model:
 
     # Decide where every engine op's weights live; upload them now if they all fit.
     def _prepare(self):
-        # Engine shortcut.
+        # Engine shortcut and its lane count (channels are spread over `lanes` weight banks).
         e = self.engine
+        L = e.lanes
         # Engine ops.
         eops = [op for op in self.ops if op["op"] in ENGINE_OPS]
-        # Total weight bytes and parameter channels.
-        tw = sum(op["N"] * op["K"] for op in eops)
-        tp = sum(op["N"] for op in eops)
+        # Rows per bank of a layer: ceil(N / lanes).
+        for op in eops:
+            op["_rows"] = (op["N"] + L - 1) // L
+        # Total weight bytes and parameter records per bank.
+        tw = sum(op["_rows"] * op["K"] for op in eops)
+        tp = sum(op["_rows"] for op in eops)
         # Everything fits: weights stay resident on the engine for every inference.
         self.resident = tw <= e.w_cap and tp <= e.p_cap
-        # Running offsets.
+        # Running local offsets (per bank).
         wo, po = 0, 0
         # Each engine op.
         for op in eops:
@@ -131,20 +135,23 @@ class Model:
                 # Weight and parameter offsets.
                 op["_wb"], op["_pb"] = wo, po
                 # Upload once.
-                e.upload_w(wo, self._blob(op["w"]))
+                e.upload_w(wo, self._blob(op["w"]), op["K"])
                 e.upload_p(po, self._blob(op["p"]))
                 # Advance.
-                wo += op["N"] * op["K"]
-                po += op["N"]
+                wo += op["_rows"] * op["K"]
+                po += op["_rows"]
             # Channels per job: weights, parameters and one vector's outputs must fit, and for depthwise
             # one vector holds K bytes per channel, so X limits the chunk too.
-            c = min(op["N"], e.w_cap // op["K"], e.p_cap, e.y_cap)
+            c = min(op["N"], L * (e.w_cap // op["K"]), L * e.p_cap, e.y_cap)
             # Depthwise: K * chunk bytes per vector in X.
             if op["op"] == "dw":
                 c = min(c, e.x_cap // op["K"])
             # Others: one K-byte vector must fit in X.
             elif op["K"] > e.x_cap:
                 c = 0
+            # Chunks that do not cover the whole layer must start on a lane boundary.
+            if c < op["N"]:
+                c -= c % L
             # 0 means "never fits": this layer runs in software.
             op["_chunk"] = c
 
@@ -309,7 +316,7 @@ class Model:
         cs = op["_chunk"] or N
         # Software fallback needs its own copy of the weights.
         if not op["_chunk"]:
-            eng.upload_w(0, self._blob(op["w"]))
+            eng.upload_w(0, self._blob(op["w"]), K)
             eng.upload_p(0, self._blob(op["p"]))
         # Each channel chunk.
         for n0 in range(0, N, cs):
@@ -318,12 +325,12 @@ class Model:
             nc = n1 - n0
             # Weight/param location of this chunk.
             if eng is e and self.resident:
-                # Already resident.
-                wb, pb = op["_wb"] + n0 * K, op["_pb"] + n0
+                # Already resident (n0 is a multiple of the lane count, so its rows start n0 // lanes into the layer).
+                wb, pb = op["_wb"] + (n0 // e.lanes) * K, op["_pb"] + n0 // e.lanes
             elif eng is e:
                 # Stream this chunk's weights and params in.
                 w, p = op["w"], op["p"]
-                e.upload_w(0, self._blob([w[0] + n0 * K, nc * K]))
+                e.upload_w(0, self._blob([w[0] + n0 * K, nc * K]), K)
                 e.upload_p(0, self._blob([p[0] + n0 * kn.PARAM_BYTES, nc * kn.PARAM_BYTES]))
                 wb, pb = 0, 0
             else:
@@ -358,8 +365,9 @@ class Model:
     # Human-readable summary of the ops, their sizes and where they run.
     def summary(self):
         # Lines to print.
-        lines = ["engine: %s  (W %d B, X %d B, Y %d B, P %d ch)  weights %s" % (
-            self.engine.name, self.engine.w_cap, self.engine.x_cap, self.engine.y_cap, self.engine.p_cap,
+        e = self.engine
+        lines = ["engine: %s  (%d lane%s, W %d B/bank, X %d B, Y %d B, P %d ch/bank)  weights %s" % (
+            e.name, e.lanes, "" if e.lanes == 1 else "s", e.w_cap, e.x_cap, e.y_cap, e.p_cap,
             "resident" if self.resident else "streamed per inference")]
         # Each op.
         for op in self.ops:

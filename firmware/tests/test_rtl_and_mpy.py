@@ -14,34 +14,53 @@ SIM = os.path.join(ROOT, "rtl", "sim")
 
 
 # Run a command in rtl/sim/ and return its output.
-def _run(cmd, timeout=1800):
+def _run(cmd, env=None, timeout=1800):
     # Capture everything.
-    r = subprocess.run(cmd, cwd=SIM, capture_output=True, text=True, timeout=timeout)
+    r = subprocess.run(cmd, cwd=SIM, capture_output=True, text=True, timeout=timeout, env=env)
     # Combined output.
     return r.stdout + r.stderr
 
 
-# Engine unit testbench against the Python register model.
+# Environment selecting the engine build for run_sim.sh.
+def _env(lanes, rq):
+    # Inherit the rest.
+    e = dict(os.environ)
+    # Build options.
+    e["LANES"], e["RQ_MODE"] = str(lanes), str(rq)
+    return e
+
+
+# Both requantisers against the Python reference (20,000 cases).
 @pytest.mark.skipif(not shutil.which("iverilog"), reason="Icarus Verilog not installed")
-def test_tb_engine():
+def test_tb_requant():
+    # Generate and run.
+    out = _run(["bash", "run_sim.sh", "requant"])
+    # Verdict line.
+    assert "PASS tb_requant" in out, out[-2000:]
+
+
+# Engine unit testbench against the Python register model, for several builds (lanes, requantiser).
+@pytest.mark.skipif(not shutil.which("iverilog"), reason="Icarus Verilog not installed")
+@pytest.mark.parametrize("lanes,rq", [(1, 0), (1, 1), (2, 0), (4, 1), (8, 1)])
+def test_tb_engine(lanes, rq):
     # Fresh random vectors.
-    _run([sys.executable, "gen_engine_vectors.py", "7", "60"])
+    _run([sys.executable, "gen_engine_vectors.py", "7", "60", str(lanes), str(rq)])
     # Compile and run.
-    out = _run(["bash", "run_sim.sh", "engine"])
+    out = _run(["bash", "run_sim.sh", "engine"], _env(lanes, rq))
     # Verdict line.
     assert "PASS tb_engine" in out, out[-2000:]
 
 
 # Whole-model inference through the UART bridge into the engine.
 @pytest.mark.skipif(not shutil.which("iverilog"), reason="Icarus Verilog not installed")
-@pytest.mark.parametrize("name", ["m_cnn", "m_avg"])
-def test_tb_system(name):
+@pytest.mark.parametrize("name,lanes,rq", [("m_cnn", 1, 0), ("m_avg", 1, 0), ("m_cnn", 4, 1)])
+def test_tb_system(name, lanes, rq):
     # Pytest needs the tflite schema to record the inference.
     pytest.importorskip("tflite")
     # Record the inference.
-    _run([sys.executable, "gen_system_vectors.py", model_path(name), "2"])
+    _run([sys.executable, "gen_system_vectors.py", model_path(name), "2", str(lanes), str(rq)])
     # Replay through the UART top.
-    out = _run(["bash", "run_sim.sh", "uart"])
+    out = _run(["bash", "run_sim.sh", "uart"], _env(lanes, rq))
     # Verdict.
     assert "PASS tb_uart_top" in out, out[-2000:]
 
