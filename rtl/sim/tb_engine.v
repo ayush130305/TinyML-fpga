@@ -8,7 +8,9 @@
 
 module tb_engine #(
     parameter LANES   = 1,               // engine lanes under test (must match gen_engine_vectors.py)
-    parameter RQ_MODE = 0                // requantiser under test (must match gen_engine_vectors.py)
+    parameter RQ_MODE = 0,               // requantiser under test (must match gen_engine_vectors.py)
+    parameter HAS_QUEUE = 0,             // descriptor queue under test (must match gen_engine_vectors.py)
+    parameter HAS_PERF = 0               // performance counters under test (must match gen_engine_vectors.py)
 );
 
     // Clock.
@@ -49,7 +51,7 @@ module tb_engine #(
     always #20 clk = ~clk;
 
     // This contains the instantiation for the device under test
-    tmf_engine #(.W_AW(10), .X_AW(9), .Y_AW(8), .P_AW(8), .LANES(LANES), .RQ_MODE(RQ_MODE)) dut (
+    tmf_engine #(.W_AW(10), .X_AW(9), .Y_AW(8), .P_AW(8), .LANES(LANES), .RQ_MODE(RQ_MODE), .HAS_QUEUE(HAS_QUEUE), .D_AW(9), .HAS_PERF(HAS_PERF)) dut (
         .clk(clk), .rst(rst), .bus_addr(addr), .bus_wr(wr), .bus_wdata(wdata), .bus_rd(rd),
         .bus_rdata(rdata), .status_o(status));
 
@@ -113,6 +115,25 @@ module tb_engine #(
                         errors = errors + 1;
                     end
                 end
+                // Start the descriptor queue and wait for done.
+                8'h06: begin
+                    // Queue command.
+                    bus_write(16'h011F, 8'h02);
+                    // Poll STATUS.done (bounded).
+                    polls = 0;
+                    r = 8'h00;
+                    while (!r[1] && polls < 400000) begin
+                        bus_read(16'h0120, r);
+                        polls = polls + 1;
+                    end
+                    // Count the job.
+                    jobs = jobs + 1;
+                    // Hung queue.
+                    if (!r[1]) begin
+                        $display("FAIL job %0d: queue never finished", jobs);
+                        errors = errors + 1;
+                    end
+                end
                 // Expect a byte.
                 8'h03: begin
                     // Read it.
@@ -164,8 +185,8 @@ module tb_engine #(
             pc = pc + 1;
         end
         // Verdict.
-        if (errors == 0) $display("PASS tb_engine (lanes %0d, rq_mode %0d): %0d jobs, %0d checks", LANES, RQ_MODE, jobs, checks);
-        else             $display("FAIL tb_engine (lanes %0d, rq_mode %0d): %0d errors in %0d checks", LANES, RQ_MODE, errors, checks);
+        if (errors == 0) $display("PASS tb_engine (lanes %0d, rq_mode %0d, queue %0d, perf %0d): %0d jobs, %0d checks", LANES, RQ_MODE, HAS_QUEUE, HAS_PERF, jobs, checks);
+        else             $display("FAIL tb_engine (lanes %0d, rq_mode %0d, queue %0d, perf %0d): %0d errors in %0d checks", LANES, RQ_MODE, HAS_QUEUE, HAS_PERF, errors, checks);
         $finish;
     end
 

@@ -10,7 +10,8 @@
 #   04_0000_DD  expect STATUS == DD
 #   05_000000   expect CYCLES == the next word
 #   FF_000000   end of test
-# usage: python3 gen_engine_vectors.py [seed] [jobs] [lanes] [rq_mode]
+#   06_000000   start the descriptor queue (CTRL = 2) and wait for STATUS.done
+# usage: python3 gen_engine_vectors.py [seed] [jobs] [lanes] [rq_mode] [queue] [perf]
 # The memory sizes below must match the parameters of tb_engine.v.
 
 import os
@@ -20,7 +21,8 @@ import sys
 
 # Make the package importable from the repo.
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "firmware"))
-from tinyml_fpga.engine import (SimBus, HwEngine, config_frame, X_ADDR, Y_ADDR, R_CFG, MODE_DW, MODE_RAW)
+from tinyml_fpga.engine import (SimBus, HwEngine, config_frame, descriptor_bytes, X_ADDR, Y_ADDR, D_ADDR, R_CFG, R_QCNT, R_QDONE,
+                                R_PERF, DESC_BYTES, MODE_DW, MODE_RAW)
 from tinyml_fpga.kernels import pack_param
 
 # RAM sizes of the testbench build (total over all banks).
@@ -30,12 +32,14 @@ SEED = int(sys.argv[1]) if len(sys.argv) > 1 else 1
 JOBS = int(sys.argv[2]) if len(sys.argv) > 2 else 60
 LANES = int(sys.argv[3]) if len(sys.argv) > 3 else 1
 RQ_MODE = int(sys.argv[4]) if len(sys.argv) > 4 else 0
+QUEUE = int(sys.argv[5]) if len(sys.argv) > 5 else 0
+PERF = int(sys.argv[6]) if len(sys.argv) > 6 else 0
 # Random generator.
 rng = random.Random(SEED)
 # Output words.
 words = []
 # Golden model.
-sim = SimBus(W_AW, X_AW, Y_AW, P_AW, LANES, RQ_MODE)
+sim = SimBus(W_AW, X_AW, Y_AW, P_AW, LANES, RQ_MODE, queue=bool(QUEUE), d_aw=9, perf=bool(PERF))
 
 
 # A bus that forwards to the model and records every written byte as a testbench word.
@@ -84,6 +88,10 @@ def job(K, N, nvec, xs, wb, pb, ioff, zp, amin, amax, mode, check_cycles=True):
         if check_cycles:
             words.append(0x05 << 24)
             words.append(sim.cycle_count)
+        # Performance counters.
+        if PERF:
+            for a in range(R_PERF, R_PERF + 16):
+                words.append((0x03 << 24) | (a << 8) | sim.read(a))
 
 
 # Random int8 bytes.
@@ -157,10 +165,93 @@ for j in range(JOBS):
     # Emit.
     job(K, N, nvec, xs, wb, pb, ioff, zp, lo, hi, (MODE_DW if dw else 0) | (MODE_RAW if raw else 0))
 
+
+# Descriptor queue runs: several independent jobs started with one command.
+def queue_run(njobs, bad_at=None):
+    # Allocation cursors in X, Y, W (per bank) and P (per bank).
+    xa = ya = wa = pa = 0
+    # Descriptors and what to check afterwards.
+    descs, checks = [], []
+    for j in range(njobs):
+        # Small random job that is not depthwise-heavy.
+        dw = rng.random() < 0.25
+        raw = rng.random() < 0.15
+        N = rng.randrange(1, 8)
+        K = rng.randrange(1, 18)
+        rows = (N + LANES - 1) // LANES
+        ob = 4 if raw else 1
+        xs = K * N if dw else K
+        nvec = rng.randrange(1, 4)
+        # Does it still fit?
+        if (xa + nvec * xs > (1 << X_AW) or ya + nvec * N * ob > (1 << Y_AW) or wa + rows * K > BW or pa + rows > BP):
+            break
+        # Data at this job's own place.
+        eng.bus.write_block(X_ADDR + xa, rbytes(nvec * xs))
+        eng.upload_w(wa, rbytes(N * K), K)
+        eng.upload_p(pa, rparams(N, rng.random() < 0.3))
+        ioff = rng.randrange(-127, 129)
+        zp = rng.randrange(-128, 128)
+        lo = rng.randrange(-128, 128)
+        hi = rng.randrange(lo, 128)
+        mode = (MODE_DW if dw else 0) | (MODE_RAW if raw else 0)
+        # A deliberately empty job to test the error path.
+        Kd = 0 if bad_at == j else K
+        descs.append(descriptor_bytes(Kd, N, nvec, xs, wa, pa, ioff, zp, lo, hi, mode, xa, ya))
+        checks.append((ya, nvec * N * ob))
+        xa += nvec * xs
+        ya += nvec * N * ob
+        wa += rows * K
+        pa += rows
+    # Write the descriptors (64 bytes per slot) and the count; then start.
+    blob = b"".join(d + bytes(DESC_BYTES - len(d)) for d in descs)
+    eng.bus.write_block(D_ADDR, blob)
+    eng.bus.write_block(R_QCNT, bytes([len(descs)]))
+    sim.write(0x11F, 2)
+    words.append(0x06 << 24)
+    words.append((0x04 << 24) | sim.status)
+    # QDONE.
+    words.append((0x03 << 24) | (R_QDONE << 8) | sim.read(R_QDONE))
+    if sim.status == 2:
+        # Every job's outputs.
+        for ya_, n in checks:
+            for i in range(n):
+                words.append((0x03 << 24) | ((Y_ADDR + ya_ + i) << 8) | sim.Y[ya_ + i])
+        # Clock count.
+        words.append(0x05 << 24)
+        words.append(sim.cycle_count)
+        # Performance counters.
+        if PERF:
+            for a in range(R_PERF, R_PERF + 16):
+                words.append((0x03 << 24) | (a << 8) | sim.read(a))
+    else:
+        # Clear the error so the next run starts clean.
+        eng.bus.write_block(0x11F, bytes([0x80]))
+        sim.write(0x11F, 0x80)
+
+
+# Queue tests.
+if QUEUE:
+    for k in range(10):
+        queue_run(rng.randrange(1, 6))
+    # Error cases: a failing job in the middle (reports how many finished), zero count, too many descriptors.
+    queue_run(4, bad_at=2)
+    eng.bus.write_block(R_QCNT, bytes([0]))
+    sim.write(0x11F, 2)
+    words.append(0x06 << 24)
+    words.append((0x04 << 24) | sim.status)
+    eng.bus.write_block(0x11F, bytes([0x80]))
+    sim.write(0x11F, 0x80)
+    eng.bus.write_block(R_QCNT, bytes([9]))
+    sim.write(0x11F, 2)
+    words.append(0x06 << 24)
+    words.append((0x04 << 24) | sim.status)
+    eng.bus.write_block(0x11F, bytes([0x80]))
+    sim.write(0x11F, 0x80)
+
 # Read-back of the config block and identification registers.
 for a in range(0x100, 0x112):
     words.append((0x03 << 24) | (a << 8) | sim.read(a))
-for a in range(0x130, 0x138):
+for a in range(0x130, 0x139):
     words.append((0x03 << 24) | (a << 8) | sim.read(a))
 # End marker.
 words.append(0xFF << 24)
@@ -169,4 +260,4 @@ words.append(0xFF << 24)
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "engine_vectors.hex"), "w") as f:
     f.write("\n".join("%08X" % (w & 0xFFFFFFFF) for w in words) + "\n")
 # Summary.
-print("wrote %d words, %d jobs (seed %d, lanes %d, rq_mode %d)" % (len(words), JOBS + 7, SEED, LANES, RQ_MODE))
+print("wrote %d words, %d jobs (seed %d, lanes %d, rq_mode %d, queue %d, perf %d)" % (len(words), JOBS + 7, SEED, LANES, RQ_MODE, QUEUE, PERF))

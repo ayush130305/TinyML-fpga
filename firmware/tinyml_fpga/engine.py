@@ -13,11 +13,18 @@
 #   0x10F ACT_MIN  s8    clamp low
 #   0x110 ACT_MAX  s8    clamp high
 #   0x111 MODE     u8    bit0 depthwise (channel o uses x[o*K..]), bit1 raw int32 output
-#   0x11F CTRL     u8    write 0x01 = start, 0x80 = clear status (put it last in the config frame)
+#   0x112 XBASE    u16   byte offset of the job's first input vector in X (version 2)
+#   0x114 YBASE    u16   byte offset of the job's first output in Y (version 2)
+#   0x118 QCNT     u8    descriptors to run with CTRL = 0x02 (builds with the queue)
+#   0x119 QDONE    u8    descriptors finished by the last queue run (RO)
+#   0x11F CTRL     u8    write 0x01 = start, 0x02 = run the descriptor queue, 0x80 = clear status
+#                        (put it last in the config frame)
 #   0x120 STATUS   u8    bit0 busy, bit1 done, bit2 error
 #   0x121 CYCLES   u32   clocks the last job took
 #   0x130 MAGIC 0x4D, 0x131 VERSION, 0x132 W_AW, 0x133 X_AW, 0x134 Y_AW, 0x135 P_AW  (read-only)
-#   0x136 LANES, 0x137 FEATURES (bit0: pipelined requantiser)                         (version 2 builds)
+#   0x136 LANES, 0x137 FEATURES (bit0 pipelined requantiser, bit1 queue, bit6 perf counters), 0x138 D_AW
+#   0x160 PERF  four u32: MAC clocks, stall clocks, output bytes, jobs (builds with HAS_PERF)
+#   0x4000 D    job descriptors, 64 bytes each: bytes 0..21 are the config block 0x100..0x115
 #   0x1000 X   0x2000 Y   0x3000 P   0x8000 W      memory windows (sizes are 2^*_AW bytes)
 #
 # With LANES > 1 the W and P windows are split into LANES equal banks selected by the top address bits.
@@ -30,6 +37,10 @@ from .kernels import PARAM_BYTES, dot_requant, to_i8_list
 
 # Register addresses.
 R_CFG, R_CTRL, R_STATUS, R_CYCLES = 0x100, 0x11F, 0x120, 0x121
+# Queue registers, descriptor window, performance counters.
+R_QCNT, R_QDONE, D_ADDR, R_PERF = 0x118, 0x119, 0x4000, 0x160
+# Bytes of config in a descriptor and bytes per descriptor slot.
+NCFG, DESC_BYTES = 22, 64
 # Read-only identification block.
 R_MAGIC = 0x130
 # Memory windows.
@@ -41,19 +52,26 @@ VERSIONS = (1, 2)
 # Version written by the current RTL and SimBus.
 VERSION = 2
 # FEATURES bits.
-F_RQ_PIPE = 1
+F_RQ_PIPE, F_QUEUE, F_PERF = 1, 2, 0x40
 # STATUS bits.
 BUSY, DONE, ERR = 1, 2, 4
 # MODE bits.
 MODE_DW, MODE_RAW = 1, 2
 # CTRL commands.
-CMD_START, CMD_CLEAR = 0x01, 0x80
+CMD_START, CMD_QUEUE, CMD_CLEAR = 0x01, 0x02, 0x80
+
+
+# Pack the configuration block 0x100..0x11F with CTRL=start as its last byte; descriptor_bytes() gives the
+# 22 config bytes alone (what a queue descriptor holds).
+def descriptor_bytes(K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, xbase=0, ybase=0):
+    # Same struct as the config frame.
+    return struct.pack("<HHHHHHhbbbBHH", K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, xbase, ybase)
 
 
 # Pack the configuration block 0x100..0x11F with CTRL=start as its last byte.
-def config_frame(K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode):
-    # 0x100..0x111 in one struct, little endian.
-    head = struct.pack("<HHHHHHhbbbB", K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode)
+def config_frame(K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, xbase=0, ybase=0):
+    # 0x100..0x115 in one struct, little endian.
+    head = struct.pack("<HHHHHHhbbbBHH", K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, xbase, ybase)
     # Pad up to 0x11F, then the start command, so the job starts when the frame's last byte lands.
     return head + bytes(0x1F - len(head)) + bytes([CMD_START])
 
@@ -95,7 +113,7 @@ class CpuEngine:
         self.P[off:off + len(data)] = data
 
     # Run one job; x is a bytes-like buffer of int8 data; returns a list of ints.
-    def run(self, K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, x):
+    def run(self, K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, x, xbase=0, ybase=0):
         # Weights of the N channels.
         w = to_i8_list(self.W[wbase:wbase + N * K])
         # Their parameter records.
@@ -128,6 +146,9 @@ class HwEngine:
         self.lanes = max(1, ident[6]) if ident[1] >= 2 else 1
         # Optional hardware features.
         self.features = ident[7] if ident[1] >= 2 else 0
+        # Descriptor queue and performance counters; the number of descriptor slots.
+        self.has_queue, self.has_perf = bool(self.features & F_QUEUE), bool(self.features & F_PERF)
+        self.queue_slots = (1 << bus.read_block(R_MAGIC + 8, 1)[0]) // DESC_BYTES if self.has_queue else 0
         # Weight bytes and parameter records per bank (the whole memory when there is one lane).
         self.w_cap = (1 << ident[2]) // self.lanes
         self.p_cap = ((1 << ident[5]) // PARAM_BYTES) // self.lanes
@@ -174,14 +195,10 @@ class HwEngine:
             if recs:
                 self.bus.write_block(P_ADDR + b * self._pbank + rec * PARAM_BYTES, recs)
 
-    # Run one job on the FPGA and return the outputs as a list of ints.
-    def run(self, K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, x):
+    # Poll STATUS until the job (or queue) is done; remember the clock count; raise on error or timeout.
+    def _wait(self):
         # Bus shortcut.
         bus = self.bus
-        # Input vectors into X.
-        bus.write_block(X_ADDR, x)
-        # Configuration, ending with the start command.
-        bus.write_block(R_CFG, config_frame(K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode))
         # Poll the status register.
         for _ in range(self.timeout_polls):
             # Status, then the cycle counter, in one read.
@@ -193,29 +210,77 @@ class HwEngine:
             if st[0] & DONE:
                 # Remember the clock count.
                 self.cycles = st[1] | (st[2] << 8) | (st[3] << 16) | (st[4] << 24)
-                break
-        else:
-            # Never finished.
-            raise RuntimeError("engine timeout")
+                return
+        # Never finished.
+        raise RuntimeError("engine timeout")
+
+    # Run one job on the FPGA and return the outputs as a list of ints.
+    # x goes to X at xbase; the results are read from Y at ybase.
+    def run(self, K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, x, xbase=0, ybase=0):
+        # Bus shortcut.
+        bus = self.bus
+        # Input vectors into X.
+        bus.write_block(X_ADDR + xbase, x)
+        # Configuration, ending with the start command.
+        bus.write_block(R_CFG, config_frame(K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, xbase, ybase))
+        # Wait.
+        self._wait()
         # Raw int32 outputs.
         if mode & MODE_RAW:
             # Four bytes per output.
-            y = bus.read_block(Y_ADDR, nvec * N * 4)
+            y = bus.read_block(Y_ADDR + ybase, nvec * N * 4)
             # Little-endian signed words.
             return list(struct.unpack("<%di" % (nvec * N), y))
         # int8 outputs.
-        return to_i8_list(bus.read_block(Y_ADDR, nvec * N))
+        return to_i8_list(bus.read_block(Y_ADDR + ybase, nvec * N))
+
+    # Run several jobs back to back with one start. jobs is a list of job tuples
+    # (K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, xbase, ybase); their inputs
+    # must already be in X and their outputs are left in Y (read them with read_y). Needs the queue feature.
+    def run_queue(self, jobs):
+        # Feature and capacity checks.
+        if not self.has_queue:
+            raise RuntimeError("this engine build has no descriptor queue")
+        if len(jobs) > self.queue_slots or len(jobs) > 255:
+            raise ValueError("%d jobs, queue holds %d" % (len(jobs), self.queue_slots))
+        # Descriptors, 64 bytes per slot, in one block (the config bytes then padding).
+        blob = bytearray()
+        for j in jobs:
+            blob += descriptor_bytes(*j) + bytes(DESC_BYTES - NCFG)
+        # Write them, then the count and the start command in one frame (QCNT is at 0x118, CTRL at 0x11F).
+        self.bus.write_block(D_ADDR, blob)
+        self.bus.write_block(R_QCNT, bytes([len(jobs)]) + bytes(R_CTRL - R_QCNT - 1) + bytes([CMD_QUEUE]))
+        # Wait for the whole list.
+        self._wait()
+
+    # Read bytes from Y (after run_queue).
+    def read_y(self, off, n):
+        return self.bus.read_block(Y_ADDR + off, n)
+
+    # Write bytes into X (before run_queue).
+    def write_x(self, off, data):
+        self.bus.write_block(X_ADDR + off, data)
+
+    # Performance counters of the last job or queue: (mac clocks, stall clocks, output bytes, jobs).
+    def perf(self):
+        # Needs HAS_PERF.
+        if not self.has_perf:
+            raise RuntimeError("this engine build has no performance counters")
+        return struct.unpack("<4I", self.bus.read_block(R_PERF, 16))
 
 
-# Clocks the engine takes for a job (the exact model of rtl/tmf_engine.v).
+# Clocks the engine takes for a job (the exact model of rtl/tmf_engine.v), with the counters of the performance
+# monitor. Returns (cycles, mac_clocks, stall_clocks).
 #   shifts : list of the N channels' TFLite shifts          lanes / rq_mode : the build's LANES and RQ_MODE
 # Each group of `lanes` channels (one channel for depthwise) costs 1 check + 10 parameter fetches + 1 load +
 # K multiply-accumulates + 3 pipeline drain + 1 step = K + 16 clocks when the output unit keeps up. The output
 # unit (requantiser + Y writes) works on the finished group while the next one is computed, and the next
-# group's hand-over waits until it is free.
-def job_cycles(K, N, nvec, shifts, mode, lanes=1, rq_mode=0):
+# group's hand-over waits until it is free. The job itself adds one set-up clock in front.
+def job_stats(K, N, nvec, shifts, mode, lanes=1, rq_mode=0):
     # Clock of the current group's check state, and first clock the output unit is free.
     t, free = 0, 0
+    # MAC and stall clock counters.
+    mac, stall = 0, 0
     # Raw mode flag and depthwise flag.
     raw, dw = bool(mode & MODE_RAW), bool(mode & MODE_DW)
     # Every vector.
@@ -227,6 +292,9 @@ def job_cycles(K, N, nvec, shifts, mode, lanes=1, rq_mode=0):
             cnt = 1 if dw else min(lanes, N - o)
             # Hand-over clock: the MAC pipeline is empty K + 14 clocks after the check, and the unit must be idle.
             hand = max(t + K + 14, free)
+            # Counters.
+            mac += K
+            stall += hand - (t + K + 14)
             # Raw: four byte writes per channel.
             if raw:
                 free = hand + 1 + 4 * cnt
@@ -246,8 +314,13 @@ def job_cycles(K, N, nvec, shifts, mode, lanes=1, rq_mode=0):
             t = hand + 2
             # Next channels.
             o += cnt
-    # The job ends when the last group is handed over, stepped, and the output unit is empty.
-    return max(t, free) + 1
+    # The job ends when the last group is handed over, stepped, and the output unit is empty; +1 for set-up.
+    return max(t, free) + 2, mac, stall
+
+
+# Clocks of a job as the cycle counter reports them.
+def job_cycles(K, N, nvec, shifts, mode, lanes=1, rq_mode=0):
+    return job_stats(K, N, nvec, shifts, mode, lanes, rq_mode)[0]
 
 
 # Python model of the RTL behind the byte bus: lets the hardware driver run on a PC with no FPGA.
@@ -255,16 +328,19 @@ def job_cycles(K, N, nvec, shifts, mode, lanes=1, rq_mode=0):
 # testbench is checked against.
 class SimBus:
     # Default sizes match the tmf_engine.v defaults.
-    def __init__(self, w_aw=12, x_aw=10, y_aw=8, p_aw=10, lanes=1, rq_mode=0):
+    def __init__(self, w_aw=12, x_aw=10, y_aw=8, p_aw=10, lanes=1, rq_mode=0, queue=False, d_aw=9, perf=False):
         # Address widths and build options.
         self.aw = (w_aw, x_aw, y_aw, p_aw)
-        self.lanes, self.rq_mode = lanes, rq_mode
+        self.lanes, self.rq_mode, self.queue, self.d_aw, self.perf = lanes, rq_mode, queue, d_aw, perf
         # Memories (W and P are bank-major: bank b starts at b * size / lanes).
         self.W, self.X, self.Y, self.P = bytearray(1 << w_aw), bytearray(1 << x_aw), bytearray(1 << y_aw), bytearray(1 << p_aw)
+        # Descriptor RAM.
+        self.D = bytearray(1 << d_aw) if queue else bytearray()
         # Config registers 0x100..0x11F.
         self.cfg = bytearray(0x20)
-        # STATUS and CYCLES.
-        self.status, self.cycle_count = 0, 0
+        # STATUS, CYCLES, descriptors done, performance counters.
+        self.status, self.cycle_count, self.qdone = 0, 0, 0
+        self.pc = [0, 0, 0, 0]
         # Transaction counters (link traffic statistics).
         self.frames, self.bytes = 0, 0
 
@@ -279,6 +355,9 @@ class SimBus:
         # P window.
         if P_ADDR <= a < P_ADDR + len(self.P):
             return self.P, a - P_ADDR
+        # D window.
+        if D_ADDR <= a < D_ADDR + len(self.D):
+            return self.D, a - D_ADDR
         # W window.
         if W_ADDR <= a < W_ADDR + len(self.W):
             return self.W, a - W_ADDR
@@ -288,15 +367,18 @@ class SimBus:
     # One byte write, exactly as the RTL decodes it.
     def write(self, a, v):
         # Config registers (ignored while busy, like the RTL).
-        if 0x100 <= a < 0x11F:
+        if 0x100 <= a < 0x100 + NCFG or a == R_QCNT:
             # Store.
             if not self.status & BUSY:
                 self.cfg[a - 0x100] = v
         # Control register.
         elif a == R_CTRL:
-            # Start.
+            # Start one job.
             if v & CMD_START:
                 self._start()
+            # Run the descriptor queue.
+            elif v & CMD_QUEUE and self.queue:
+                self._start_queue()
             # Clear status.
             elif v & CMD_CLEAR:
                 self.status = 0
@@ -310,9 +392,12 @@ class SimBus:
 
     # One byte read.
     def read(self, a):
-        # Config read-back.
-        if 0x100 <= a < 0x11F:
+        # Config read-back (and QCNT).
+        if 0x100 <= a < 0x100 + NCFG or a == R_QCNT:
             return self.cfg[a - 0x100]
+        # Descriptors done.
+        if a == R_QDONE:
+            return self.qdone if self.queue else 0
         # Status.
         if a == R_STATUS:
             return self.status
@@ -320,8 +405,12 @@ class SimBus:
         if R_CYCLES <= a < R_CYCLES + 4:
             return (self.cycle_count >> (8 * (a - R_CYCLES))) & 0xFF
         # Identification block.
-        if R_MAGIC <= a < R_MAGIC + 8:
-            return (MAGIC, VERSION) [a - R_MAGIC] if a < R_MAGIC + 2 else (self.aw + (self.lanes, F_RQ_PIPE if self.rq_mode == 1 else 0))[a - R_MAGIC - 2]
+        if R_MAGIC <= a < R_MAGIC + 9:
+            feat = (F_RQ_PIPE if self.rq_mode == 1 else 0) | (F_QUEUE if self.queue else 0) | (F_PERF if self.perf else 0)
+            return (MAGIC, VERSION, self.aw[0], self.aw[1], self.aw[2], self.aw[3], self.lanes, feat, self.d_aw if self.queue else 0)[a - R_MAGIC]
+        # Performance counters.
+        if R_PERF <= a < R_PERF + 16:
+            return (self.pc[(a - R_PERF) // 4] >> (8 * ((a - R_PERF) % 4))) & 0xFF if self.perf else 0
         # Memories.
         m = self._mem(a)
         # Mapped byte or zero.
@@ -344,29 +433,28 @@ class SimBus:
         # Gather the bytes.
         return bytearray(self.read(a + i) for i in range(n))
 
-    # Execute a job the way tmf_engine.v does, including its error checks.
-    def _start(self):
+    # Run the job described by 22 config bytes: returns (ok, cycles, mac, stall, output bytes). Writes Y.
+    def _job(self, cfgb):
         # Decode the configuration block.
-        K, N, nvec, xs, wb, pb, ioff, zp, amin, amax, mode = struct.unpack_from("<HHHHHHhbbbB", self.cfg, 0)
+        K, N, nvec, xs, wb, pb, ioff, zp, amin, amax, mode, xbase, ybase = struct.unpack_from("<HHHHHHhbbbBHH", cfgb, 0)
         # Lanes and bank geometry.
         L = self.lanes
         bw, bp = len(self.W) // L, len(self.P) // L
         # Output bytes per result and depthwise flag.
         ob = 4 if mode & MODE_RAW else 1
         dw = bool(mode & MODE_DW)
-        # Empty job: error and done, nothing computed.
+        # Empty job: error, nothing computed.
         if K == 0 or N == 0 or nvec == 0:
-            self.status = ERR | DONE
-            return
+            return False, 0, 0, 0, 0
         # Same per-group bounds checks as the RTL, walking the groups in order.
-        ys, bad = 0, False
+        ys, bad = ybase, False
         for v in range(nvec):
             o = 0
             while o < N and not bad:
                 # Group size, local weight row, local parameter record and X slice of this group.
                 cnt = 1 if dw else min(L, N - o)
                 row = o // L
-                xrow = v * xs + (o * K if dw else 0)
+                xrow = xbase + v * xs + (o * K if dw else 0)
                 # Memory limits.
                 if xrow + K > len(self.X) or wb + row * K + K > bw or (pb + row) * PARAM_BYTES + PARAM_BYTES > bp or ys + cnt * ob > len(self.Y):
                     bad = True
@@ -376,8 +464,7 @@ class SimBus:
                 break
         # Error: nothing is reported beyond the status.
         if bad:
-            self.status = ERR | DONE
-            return
+            return False, 0, 0, 0, 0
         # Gather the channels' weight rows and parameter records from their banks.
         w, p = bytearray(), bytearray()
         for o in range(N):
@@ -385,18 +472,57 @@ class SimBus:
             b, r = o % L, o // L
             w += self.W[b * bw + wb + r * K: b * bw + wb + (r + 1) * K]
             p += self.P[b * bp + (pb + r) * PARAM_BYTES: b * bp + (pb + r + 1) * PARAM_BYTES]
-        # Compute with the shared kernel.
-        y = dot_requant(to_i8_list(self.X), to_i8_list(w), p, K, N, nvec, xs, ioff, zp, amin, amax, dw=dw, raw=bool(mode & MODE_RAW))
-        # Store results.
+        # Compute with the shared kernel (the input vectors start at xbase).
+        y = dot_requant(to_i8_list(self.X[xbase:]), to_i8_list(w), p, K, N, nvec, xs, ioff, zp, amin, amax, dw=dw, raw=bool(mode & MODE_RAW))
+        # Store results at ybase.
         if mode & MODE_RAW:
             # Little-endian int32 words.
-            self.Y[0:4 * len(y)] = struct.pack("<%di" % len(y), *y)
+            self.Y[ybase:ybase + 4 * len(y)] = struct.pack("<%di" % len(y), *y)
         else:
             # Bytes.
             for i, v in enumerate(y):
-                self.Y[i] = v & 0xFF
-        # Exact clock count.
+                self.Y[ybase + i] = v & 0xFF
+        # Exact clock count and counters.
         shifts = [struct.unpack_from("<b", p, o * PARAM_BYTES + 8)[0] for o in range(N)]
-        self.cycle_count = job_cycles(K, N, nvec, shifts, mode, L, self.rq_mode)
-        # Done.
+        cyc, mac, stall = job_stats(K, N, nvec, shifts, mode, L, self.rq_mode)
+        return True, cyc, mac, stall, nvec * N * ob
+
+    # CTRL = start: one job from the config registers.
+    def _start(self):
+        # Run it.
+        ok, cyc, mac, stall, outb = self._job(bytes(self.cfg[:NCFG]))
+        # Counters restart with every start.
+        self.pc = [mac, stall, outb, 1] if ok else [0, 0, 0, 0]
+        # Result.
+        self.cycle_count = cyc
+        self.status = DONE if ok else ERR | DONE
+
+    # CTRL = queue: run QCNT descriptors from D, back to back.
+    def _start_queue(self):
+        # Count and capacity checks.
+        n = self.cfg[R_QCNT - 0x100]
+        if n == 0 or n * DESC_BYTES > len(self.D):
+            self.status = ERR | DONE
+            return
+        # Counters restart.
+        self.pc = [0, 0, 0, 0]
+        total, self.qdone = 0, 0
+        # Each descriptor: 23 clocks to load (22 bytes plus pipeline), then the job.
+        for i in range(n):
+            # The descriptor becomes the config registers.
+            self.cfg[:NCFG] = self.D[i * DESC_BYTES: i * DESC_BYTES + NCFG]
+            ok, cyc, mac, stall, outb = self._job(bytes(self.cfg[:NCFG]))
+            # Failed job: stop here.
+            if not ok:
+                self.status = ERR | DONE
+                return
+            # Accumulate.
+            total += NCFG + 1 + cyc
+            self.pc[0] += mac
+            self.pc[1] += stall
+            self.pc[2] += outb
+            self.pc[3] += 1
+            self.qdone += 1
+        # Finished.
+        self.cycle_count = total
         self.status = DONE

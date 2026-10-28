@@ -22,11 +22,11 @@ def _run(cmd, env=None, timeout=1800):
 
 
 # Environment selecting the engine build for run_sim.sh.
-def _env(lanes, rq):
+def _env(lanes, rq, queue=0, perf=0):
     # Inherit the rest.
     e = dict(os.environ)
     # Build options.
-    e["LANES"], e["RQ_MODE"] = str(lanes), str(rq)
+    e["LANES"], e["RQ_MODE"], e["QUEUE"], e["PERF"] = str(lanes), str(rq), str(queue), str(perf)
     return e
 
 
@@ -41,12 +41,12 @@ def test_tb_requant():
 
 # Engine unit testbench against the Python register model, for several builds (lanes, requantiser).
 @pytest.mark.skipif(not shutil.which("iverilog"), reason="Icarus Verilog not installed")
-@pytest.mark.parametrize("lanes,rq", [(1, 0), (1, 1), (2, 0), (4, 1), (8, 1)])
-def test_tb_engine(lanes, rq):
+@pytest.mark.parametrize("lanes,rq,queue,perf", [(1, 0, 0, 0), (1, 1, 0, 0), (2, 0, 1, 0), (4, 1, 1, 1), (8, 1, 0, 1)])
+def test_tb_engine(lanes, rq, queue, perf):
     # Fresh random vectors.
-    _run([sys.executable, "gen_engine_vectors.py", "7", "60", str(lanes), str(rq)])
+    _run([sys.executable, "gen_engine_vectors.py", "7", "60", str(lanes), str(rq), str(queue), str(perf)])
     # Compile and run.
-    out = _run(["bash", "run_sim.sh", "engine"], _env(lanes, rq))
+    out = _run(["bash", "run_sim.sh", "engine"], _env(lanes, rq, queue, perf))
     # Verdict line.
     assert "PASS tb_engine" in out, out[-2000:]
 

@@ -14,7 +14,7 @@
 # Nothing here imports numpy or the tflite schema at import time, so it loads on MicroPython.
 
 # Package version.
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 from .model import Model
 from .engine import CpuEngine, HwEngine, SimBus

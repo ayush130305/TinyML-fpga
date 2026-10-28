@@ -14,7 +14,10 @@ module tinyml_uart_top #(
     parameter Y_AW   = 8,               // output RAM address width    (max 12)
     parameter P_AW   = 10,              // parameter RAM address width (16 B per channel, max 12)
     parameter LANES  = 1,               // output channels computed at once: 1, 2, 4 or 8
-    parameter RQ_MODE = 0               // requantiser: 0 serial (smallest), 1 pipelined (fastest, 4 multipliers)
+    parameter RQ_MODE = 0,              // requantiser: 0 serial (smallest), 1 pipelined (fastest, 4 multipliers)
+    parameter HAS_QUEUE = 0,            // job descriptor queue
+    parameter D_AW    = 9,              // descriptor RAM address width (64 B per descriptor)
+    parameter HAS_PERF = 0              // performance counters
 ) (
     input  wire       clk,              // board clock
     input  wire       rst,              // reset, active high (e.g. a push button)
@@ -60,7 +63,8 @@ module tinyml_uart_top #(
         .bus_addr(addr), .bus_wr(wr), .bus_wdata(wdata), .bus_rd(rd), .bus_rdata(rdata));
 
     // This contains the instantiation for the int8 engine
-    tmf_engine #(.W_AW(W_AW), .X_AW(X_AW), .Y_AW(Y_AW), .P_AW(P_AW), .LANES(LANES), .RQ_MODE(RQ_MODE)) u_engine (
+    tmf_engine #(.W_AW(W_AW), .X_AW(X_AW), .Y_AW(Y_AW), .P_AW(P_AW), .LANES(LANES), .RQ_MODE(RQ_MODE),
+                .HAS_QUEUE(HAS_QUEUE), .D_AW(D_AW), .HAS_PERF(HAS_PERF)) u_engine (
         .clk(clk), .rst(rst_i),
         .bus_addr(addr), .bus_wr(wr), .bus_wdata(wdata), .bus_rd(rd), .bus_rdata(rdata),
         .status_o(st));

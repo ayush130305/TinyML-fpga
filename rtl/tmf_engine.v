@@ -15,8 +15,12 @@
 // It sits on a simple byte bus (driven by uart_bus.v, or any bridge of your own):
 //   bus_addr stable at least one clock before bus_rd; bus_rdata is valid in the bus_rd clock;
 //   bus_wr is a one-clock strobe with bus_addr/bus_wdata. Register map: see tinyml_fpga/engine.py.
-//   0x100-0x111 config (RW), 0x11F CTRL (W), 0x120 STATUS, 0x121-0x124 CYCLES, 0x130-0x137 ID (RO)
-//   0x1000 X, 0x2000 Y (RO from the bus), 0x3000 P (16 B per channel), 0x8000 W
+//   0x100-0x115 config (RW), 0x118 QCNT, 0x119 QDONE, 0x11F CTRL (W), 0x120 STATUS, 0x121-0x124 CYCLES,
+//   0x130-0x138 ID (RO), 0x160-0x16F performance counters (RO)
+//   0x1000 X, 0x2000 Y (RO from the bus), 0x3000 P (16 B per channel), 0x4000 D (job descriptors), 0x8000 W
+// With HAS_QUEUE a list of job descriptors (the same bytes as the config block, 64 B per slot) can be written
+// to D and run back to back with one CTRL = 0x02, which saves the host a configure / start / poll round trip
+// per job. HAS_PERF adds counters for MAC clocks, stall clocks, output bytes and finished jobs.
 // Bus writes to config and memories are ignored while the engine is busy.
 
 `default_nettype none
@@ -27,7 +31,10 @@ module tmf_engine #(
     parameter Y_AW    = 8,               // output RAM address width   (max 12)
     parameter P_AW    = 10,              // parameter RAM address width, all banks together (16 B per channel, max 12)
     parameter LANES   = 1,               // output channels computed at once: 1, 2, 4 or 8
-    parameter RQ_MODE = 0                // requantiser: 0 serial (smallest), 1 pipelined (needs 4 multipliers)
+    parameter RQ_MODE = 0,               // requantiser: 0 serial (smallest), 1 pipelined (needs 4 multipliers)
+    parameter HAS_QUEUE = 0,             // job descriptor queue (CTRL 0x02 runs QCNT descriptors from D)
+    parameter D_AW    = 9,               // descriptor RAM address width (64 B per descriptor, max 12)
+    parameter HAS_PERF = 0               // performance counters at 0x160
 ) (
     input  wire        clk,              // clock
     input  wire        rst,              // synchronous reset, active high
@@ -57,7 +64,11 @@ module tmf_engine #(
     // LANES as a 4-bit constant.
     localparam [3:0] LANES4 = LANES;
     // Feature bits reported in the ID block.
-    localparam [7:0] FEATURES = {7'd0, (RQ_MODE == 1)};
+    localparam [7:0] FEATURES = {1'b0, (HAS_PERF != 0), 4'd0, (HAS_QUEUE != 0), (RQ_MODE == 1)};
+    // Descriptor RAM size in bytes.
+    localparam [32:0] DSIZE = 33'd1 << D_AW;
+    // Configuration bytes held in a descriptor.
+    localparam NCFG = 22;
 
     // Sequencer states.
     localparam [3:0] S_IDLE  = 4'd0;     // waiting for CTRL.start
@@ -69,6 +80,8 @@ module tmf_engine #(
     localparam [3:0] S_NEXT  = 4'd6;     // advance to the next group
     localparam [3:0] S_FIN   = 4'd7;     // wait for the output unit, then finish
     localparam [3:0] S_ERRW  = 4'd8;     // wait for the output unit, then report an error
+    localparam [3:0] S_LD    = 4'd9;     // load the next descriptor from D into the config registers
+    localparam [3:0] S_JSTART = 4'd10;   // validate the config and set up the job
 
     // ---------------------------------------------------------------- bus decode
     // Address is in the config/control register block.
@@ -79,16 +92,22 @@ module tmf_engine #(
     wire sel_y   = (bus_addr[15:12] == 4'h2);
     // Address is in the P window.
     wire sel_p   = (bus_addr[15:12] == 4'h3);
+    // Address is in the D (descriptor) window.
+    wire sel_d   = (bus_addr[15:12] == 4'h4);
     // Address is in the W window.
     wire sel_w   = bus_addr[15];
+    // Address is a config byte; its index in the descriptor-ordered array (0x100.. = 0..21).
+    wire cfg_hit = sel_reg && (bus_addr[7:0] < NCFG);
+    // Index of the addressed config byte.
+    wire [5:0] cfg_idx = bus_addr[5:0];
     // Weight bank addressed by the bus.
     wire [2:0] bank_w = (bus_addr >> WA) & (LANES - 1);
     // Parameter bank addressed by the bus.
     wire [2:0] bank_p = (bus_addr >> PA) & (LANES - 1);
 
     // ---------------------------------------------------------------- configuration registers
-    // Raw config bytes 0x100..0x111.
-    reg  [7:0] cfg [0:17];
+    // Raw config bytes 0x100..0x115 (descriptor order).
+    reg  [7:0] cfg [0:NCFG-1];
     // Dot-product length.
     wire [15:0] cK       = {cfg[1],  cfg[0]};
     // Output channels.
@@ -113,6 +132,12 @@ module tmf_engine #(
     wire cDW  = cfg[17][0];
     // Raw int32 output mode bit.
     wire cRAW = cfg[17][1];
+    // Input base offset in X.
+    wire [15:0] cXBASE = {cfg[19], cfg[18]};
+    // Output base offset in Y.
+    wire [15:0] cYBASE = {cfg[21], cfg[20]};
+    // Number of descriptors to run (queue mode).
+    reg  [7:0] cQCNT;
 
     // ---------------------------------------------------------------- status
     // Engine running.
@@ -151,6 +176,16 @@ module tmf_engine #(
     reg [32:0] pp;
     // Output bytes scheduled so far (checked against the Y size before each group).
     reg [32:0] ys;
+    // Queue mode: the current job comes from a descriptor.
+    reg        q_run;
+    // Descriptor being run.
+    reg [7:0]  qi;
+    // Descriptors finished in the last queue run.
+    reg [7:0]  qdone;
+    // Descriptor byte counter while loading.
+    reg [5:0]  ld;
+    // Descriptor RAM read data.
+    wire [7:0] d_q;
     // Pipeline stage 1 valid (RAM data available).
     reg v1;
     // Pipeline stage 2 valid (product available).
@@ -208,6 +243,18 @@ module tmf_engine #(
     tmf_ram #(.AW(Y_AW)) u_y (.clk(clk), .we(y_we), .waddr(y_wa), .wdata(y_wd),
                                .raddr(bus_addr[Y_AW-1:0]), .q(y_q));
 
+    // Descriptor RAM (only with HAS_QUEUE).
+    generate
+        if (HAS_QUEUE != 0) begin : g_d
+            // This contains the instantiation for the descriptor RAM
+            tmf_ram #(.AW(D_AW)) u_d (.clk(clk), .we(bus_wr_ok & sel_d), .waddr(bus_addr[D_AW-1:0]), .wdata(bus_wdata),
+                                       .raddr(busy ? {qi[D_AW-7:0], ld} : bus_addr[D_AW-1:0]), .q(d_q));
+        end else begin : g_nod
+            // No queue: the descriptor window reads as zero.
+            assign d_q = 8'h00;
+        end
+    endgenerate
+
     // One lane per output channel of a group: weight bank, parameter bank and MAC.
     genvar gl;
     generate
@@ -246,6 +293,8 @@ module tmf_engine #(
     reg [1:0]  raw_b;
     // Y write pointer (bytes).
     reg [32:0] wy;
+    // The job's registers are being initialised this clock (valid config).
+    wire job_init = (st == S_JSTART) && !(cK == 16'd0 || cN == 16'd0 || cNVEC == 16'd0);
     // Hand-over of a finished group to the output unit.
     wire do_hand = (st == S_DRAIN) && !v1 && !v2 && !sbusy;
     // Lane being issued.
@@ -326,8 +375,8 @@ module tmf_engine #(
                 end
             end
         end
-        // Job start rewinds the output pointer (start is decoded again in the sequencer).
-        if (!busy && bus_wr && sel_reg && bus_addr[7:0] == 8'h1F && bus_wdata[0]) wy <= 33'd0;
+        // Job set-up rewinds the output pointer to the job's Y base.
+        if (job_init) wy <= {17'd0, cYBASE};
     end
 
     // Staging registers capture the lanes at hand-over.
@@ -343,13 +392,46 @@ module tmf_engine #(
         end
     end
 
+    // ---------------------------------------------------------------- performance counters
+    // Clocks spent issuing multiply-accumulates, clocks waited for the output unit, output bytes, finished jobs.
+    reg [31:0] p_mac, p_stall, p_out, p_jobs;
+    // The four counters packed for the bus read mux (zero without HAS_PERF).
+    wire [127:0] perf_bus = (HAS_PERF != 0) ? {p_jobs, p_out, p_stall, p_mac} : 128'd0;
+    // CTRL register write strobe.
+    wire ctl_wr = bus_wr && sel_reg && bus_addr[7:0] == 8'h1F;
+
+    // Counters: cleared by a start command, counting while the engine works.
+    always @(posedge clk) begin
+        // Only built with HAS_PERF.
+        if (HAS_PERF != 0) begin
+            // A start command from idle clears them.
+            if (st == S_IDLE && ctl_wr && (bus_wdata[0] || bus_wdata[1])) begin
+                // Clear.
+                p_mac <= 32'd0; p_stall <= 32'd0; p_out <= 32'd0; p_jobs <= 32'd0;
+            end else begin
+                // A multiply-accumulate address is issued.
+                if (st == S_DOT) p_mac <= p_mac + 32'd1;
+                // The group is complete but the output unit is still busy with the previous one.
+                if (st == S_DRAIN && !v1 && !v2 && sbusy) p_stall <= p_stall + 32'd1;
+                // One byte written to Y.
+                if (y_we) p_out <= p_out + 32'd1;
+                // A job completes.
+                if (st == S_FIN && !sbusy) p_jobs <= p_jobs + 32'd1;
+            end
+        end
+    end
+
     // ---------------------------------------------------------------- bus read mux
     // Read data: registers combinationally, memories from their registered outputs.
     always @* begin
         // Default for unmapped addresses.
         bus_rdata = 8'h00;
         // Config read-back.
-        if (sel_reg && bus_addr[7:0] < 8'h12) bus_rdata = cfg[bus_addr[4:0]];
+        if (cfg_hit) bus_rdata = cfg[cfg_idx];
+        // Descriptor count.
+        if (sel_reg && bus_addr[7:0] == 8'h18) bus_rdata = cQCNT;
+        // Descriptors finished in the last queue run.
+        if (sel_reg && bus_addr[7:0] == 8'h19) bus_rdata = qdone;
         // STATUS.
         if (sel_reg && bus_addr[7:0] == 8'h20) bus_rdata = status_o;
         // CYCLES byte 0.
@@ -376,6 +458,12 @@ module tmf_engine #(
         if (sel_reg && bus_addr[7:0] == 8'h36) bus_rdata = LANES;
         // Feature bits.
         if (sel_reg && bus_addr[7:0] == 8'h37) bus_rdata = FEATURES;
+        // Descriptor RAM address width (0 without a queue).
+        if (sel_reg && bus_addr[7:0] == 8'h38) bus_rdata = (HAS_QUEUE != 0) ? D_AW : 0;
+        // Performance counters, little endian: MAC, STALL, OUT, JOBS.
+        if (sel_reg && bus_addr[7:4] == 4'h6) bus_rdata = perf_bus[8*bus_addr[3:0] +: 8];
+        // D window.
+        if (sel_d) bus_rdata = d_q;
         // X window.
         if (sel_x) bus_rdata = x_q;
         // Y window.
@@ -389,15 +477,27 @@ module tmf_engine #(
     // ---------------------------------------------------------------- config writes
     // Loop index for the register reset.
     integer i;
-    // Config register file: bus writes when idle.
+    // A descriptor byte is being written this clock (it arrives one clock after its address).
+    wire        ld_we = (HAS_QUEUE != 0) && (st == S_LD) && (ld != 6'd0);
+    // Single write port of the config file: a descriptor load or a bus write.
+    wire        cw_en = ld_we | (bus_wr_ok & cfg_hit);
+    // Index written.
+    wire [5:0]  cw_ix = ld_we ? (ld - 6'd1) : cfg_idx;
+    // Data written.
+    wire [7:0]  cw_d  = ld_we ? d_q : bus_wdata;
+    // Config register file: bus writes when idle, descriptor loads while a queue runs.
     always @(posedge clk) begin
         // Reset clears every config byte.
         if (rst) begin
-            // Clear all 18 bytes.
-            for (i = 0; i < 18; i = i + 1) cfg[i] <= 8'h00;
-        end else if (bus_wr_ok && sel_reg && bus_addr[7:0] < 8'h12) begin
-            // Store the addressed byte.
-            cfg[bus_addr[4:0]] <= bus_wdata;
+            // Clear all bytes.
+            for (i = 0; i < NCFG; i = i + 1) cfg[i] <= 8'h00;
+            // And the descriptor count.
+            cQCNT <= 8'd0;
+        end else begin
+            // Store the addressed config byte.
+            if (cw_en) cfg[cw_ix] <= cw_d;
+            // Store the descriptor count.
+            if (bus_wr_ok && sel_reg && bus_addr[7:0] == 8'h18) cQCNT <= bus_wdata;
         end
     end
 
@@ -427,9 +527,9 @@ module tmf_engine #(
             err  <= 1'b0;
         end else begin
             // A start while a job is running is a driver bug: flag it (the running job continues).
-            if (bus_wr && sel_reg && bus_addr[7:0] == 8'h1F && bus_wdata[0] && busy) err <= 1'b1;
+            if (ctl_wr && (bus_wdata[0] || bus_wdata[1]) && busy) err <= 1'b1;
             // Clear-status command from the bus (only meaningful when idle).
-            if (bus_wr && sel_reg && bus_addr[7:0] == 8'h1F && bus_wdata[7] && !busy) begin
+            if (ctl_wr && bus_wdata[7] && !busy) begin
                 // Clear done.
                 done <= 1'b0;
                 // Clear error.
@@ -437,10 +537,23 @@ module tmf_engine #(
             end
             // State dispatch.
             case (st)
-                // Wait for CTRL.start.
-                S_IDLE: if (bus_wr && sel_reg && bus_addr[7:0] == 8'h1F && bus_wdata[0]) begin
-                    // Empty job: error at once.
-                    if (cK == 16'd0 || cN == 16'd0 || cNVEC == 16'd0) begin
+                // Wait for CTRL.start (0x01 single job, 0x02 descriptor queue).
+                S_IDLE: if (ctl_wr && bus_wdata[0]) begin
+                    // Running.
+                    busy   <= 1'b1;
+                    // New job: clear status.
+                    done   <= 1'b0;
+                    // No error yet.
+                    err    <= 1'b0;
+                    // Restart the clock counter.
+                    cycles <= 32'd0;
+                    // The job comes from the config registers.
+                    q_run  <= 1'b0;
+                    // Validate and set up.
+                    st     <= S_JSTART;
+                end else if (HAS_QUEUE != 0 && ctl_wr && bus_wdata[1]) begin
+                    // Nothing to run, or more descriptors than fit in D: error at once.
+                    if (cQCNT == 8'd0 || {19'd0, cQCNT, 6'd0} > DSIZE) begin
                         // Flag the error.
                         err  <= 1'b1;
                         // And finish.
@@ -448,26 +561,58 @@ module tmf_engine #(
                     end else begin
                         // Running.
                         busy   <= 1'b1;
-                        // New job: clear status.
+                        // New run: clear status.
                         done   <= 1'b0;
                         // No error yet.
                         err    <= 1'b0;
                         // Restart the clock counter.
                         cycles <= 32'd0;
+                        // Jobs come from descriptors.
+                        q_run  <= 1'b1;
+                        // First descriptor.
+                        qi     <= 8'd0;
+                        // None finished yet.
+                        qdone  <= 8'd0;
+                        // Start loading its bytes.
+                        ld     <= 6'd0;
+                        // Load.
+                        st     <= S_LD;
+                    end
+                end
+                // Copy the descriptor into the config registers (the config RAM write is in the config block).
+                S_LD: begin
+                    // Next byte (the address of byte n is issued in the clock with ld == n).
+                    ld <= ld + 6'd1;
+                    // The last byte is written in the clock with ld == NCFG.
+                    if (ld == NCFG) st <= S_JSTART;
+                end
+                // Validate the config and set up the job registers.
+                S_JSTART: begin
+                    // Empty job: error and done at once.
+                    if (cK == 16'd0 || cN == 16'd0 || cNVEC == 16'd0) begin
+                        // Flag the error.
+                        err  <= 1'b1;
+                        // Finished.
+                        done <= 1'b1;
+                        // Not running.
+                        busy <= 1'b0;
+                        // Idle.
+                        st   <= S_IDLE;
+                    end else begin
                         // First vector.
                         vi     <= 16'd0;
                         // First channel.
                         oi     <= 16'd0;
-                        // First vector starts at X[0].
-                        xvec   <= 33'd0;
+                        // First vector starts at the X base.
+                        xvec   <= {17'd0, cXBASE};
                         // First group's X slice.
-                        xrow   <= 33'd0;
+                        xrow   <= {17'd0, cXBASE};
                         // First weight row.
                         wrow   <= {17'd0, cWBASE};
                         // First parameter record (16 bytes per channel).
                         pp     <= {13'd0, cPBASE, 4'd0};
-                        // No output scheduled yet.
-                        ys     <= 33'd0;
+                        // Output scheduling starts at the Y base.
+                        ys     <= {17'd0, cYBASE};
                         // Check bounds first.
                         st     <= S_CHK;
                     end
@@ -561,14 +706,28 @@ module tmf_engine #(
                         st <= S_CHK;
                     end
                 end
-                // Wait for the last results to be written, then finish.
+                // Wait for the last results to be written, then finish (or load the next descriptor).
                 S_FIN: if (!sbusy) begin
-                    // Done.
-                    done <= 1'b1;
-                    // Not running.
-                    busy <= 1'b0;
-                    // Idle.
-                    st   <= S_IDLE;
+                    // Another descriptor to run.
+                    if (q_run && ({1'b0, qi} + 9'd1 < {1'b0, cQCNT})) begin
+                        // Count the finished one.
+                        qdone <= qdone + 8'd1;
+                        // Select the next.
+                        qi    <= qi + 8'd1;
+                        // Start loading its bytes.
+                        ld    <= 6'd0;
+                        // Load.
+                        st    <= S_LD;
+                    end else begin
+                        // Count the finished one.
+                        if (q_run) qdone <= qdone + 8'd1;
+                        // Done.
+                        done <= 1'b1;
+                        // Not running.
+                        busy <= 1'b0;
+                        // Idle.
+                        st   <= S_IDLE;
+                    end
                 end
                 // Error exit after the output unit has drained.
                 S_ERRW: if (!sbusy) begin
