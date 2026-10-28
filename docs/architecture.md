@@ -42,11 +42,12 @@ for v in 0..NVEC-1:                 # input vectors (one per output pixel for co
 | 0x10F / 0x110 | ACT_MIN / ACT_MAX | s8 RW | clamp |
 | 0x111 | MODE | RW | bit0 depthwise, bit1 raw int32 output |
 | 0x112 / 0x114 | XBASE / YBASE | u16 RW | first input vector in X / first output in Y |
+| 0x140–0x15E | window block | u8 W | 31 bytes describing the convolution window (builds with the window generator, see features.md) |
 | 0x118 / 0x119 | QCNT / QDONE | u8 RW / R | descriptors to run / finished (builds with the queue) |
 | 0x11F | CTRL | W | 0x01 start, 0x02 run the descriptor queue, 0x80 clear status (last byte of the config frame, so one frame configures and starts) |
 | 0x120 | STATUS | R | bit0 busy, bit1 done, bit2 error |
 | 0x121 | CYCLES | u32 R | clocks of the last job |
-| 0x130–0x138 | MAGIC 0x4D, VERSION (2), W_AW, X_AW, Y_AW, P_AW, LANES, FEATURES, D_AW | R | identification and sizes (W_AW/P_AW count all banks together; FEATURES bit0 pipelined requantiser, bit1 queue, bit6 performance counters) |
+| 0x130–0x138 | MAGIC 0x4D, VERSION (2), W_AW, X_AW, Y_AW, P_AW, LANES, FEATURES, D_AW | R | identification and sizes (W_AW/P_AW count all banks together; FEATURES bit0 pipelined requantiser, bit1 queue, bit2 window generator, bit3 fusion, bit6 performance counters) |
 | 0x160 | PERF | 4×u32 R | MAC clocks, stall clocks, output bytes, jobs (builds with performance counters) |
 | 0x1000 / 0x2000 / 0x3000 / 0x4000 / 0x8000 | X / Y / P / D / W windows | | Y is read-only from the bus; D holds job descriptors |
 

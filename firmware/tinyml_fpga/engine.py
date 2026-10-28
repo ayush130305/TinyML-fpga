@@ -15,6 +15,7 @@
 #   0x111 MODE     u8    bit0 depthwise (channel o uses x[o*K..]), bit1 raw int32 output
 #   0x112 XBASE    u16   byte offset of the job's first input vector in X (version 2)
 #   0x114 YBASE    u16   byte offset of the job's first output in Y (version 2)
+#   0x140 window block, 31 bytes, write-only (builds with the window generator, MODE bit 2): see WIN_FMT
 #   0x118 QCNT     u8    descriptors to run with CTRL = 0x02 (builds with the queue)
 #   0x119 QDONE    u8    descriptors finished by the last queue run (RO)
 #   0x11F CTRL     u8    write 0x01 = start, 0x02 = run the descriptor queue, 0x80 = clear status
@@ -22,9 +23,11 @@
 #   0x120 STATUS   u8    bit0 busy, bit1 done, bit2 error
 #   0x121 CYCLES   u32   clocks the last job took
 #   0x130 MAGIC 0x4D, 0x131 VERSION, 0x132 W_AW, 0x133 X_AW, 0x134 Y_AW, 0x135 P_AW  (read-only)
-#   0x136 LANES, 0x137 FEATURES (bit0 pipelined requantiser, bit1 queue, bit6 perf counters), 0x138 D_AW
+#   0x136 LANES, 0x137 FEATURES (bit0 pipelined requantiser, bit1 queue, bit2 window generator, bit3 fusion,
+#         bit6 perf counters), 0x138 D_AW
 #   0x160 PERF  four u32: MAC clocks, stall clocks, output bytes, jobs (builds with HAS_PERF)
-#   0x4000 D    job descriptors, 64 bytes each: bytes 0..21 are the config block 0x100..0x115
+#   0x4000 D    job descriptors, 64 bytes each: bytes 0..21 are the config block 0x100..0x115, bytes 22..52 the
+#               window block 0x140..0x15E (builds with the window generator)
 #   0x1000 X   0x2000 Y   0x3000 P   0x8000 W      memory windows (sizes are 2^*_AW bytes)
 #
 # With LANES > 1 the W and P windows are split into LANES equal banks selected by the top address bits.
@@ -41,6 +44,12 @@ R_CFG, R_CTRL, R_STATUS, R_CYCLES = 0x100, 0x11F, 0x120, 0x121
 R_QCNT, R_QDONE, D_ADDR, R_PERF = 0x118, 0x119, 0x4000, 0x160
 # Bytes of config in a descriptor and bytes per descriptor slot.
 NCFG, DESC_BYTES = 22, 64
+# Window block: address, size and layout (little endian):
+#   H W C | KH KW DH DW SH SW DM | OW | IY0 IX0 ORG | SWC SHWC KXS KYS | XLEN
+# IY0 / IX0 = image row / column of the first window's top-left tap, ORG = its X address (XBASE included),
+# SWC / SHWC = X bytes per output column / row step, KXS / KYS = X bytes per kernel column / row step,
+# XLEN = bytes of image the job may read (checked against X).
+R_WIN, NWIN, WIN_FMT = 0x140, 31, "<HHHBBBBBBBHhhhHHHHH"
 # Read-only identification block.
 R_MAGIC = 0x130
 # Memory windows.
@@ -52,20 +61,24 @@ VERSIONS = (1, 2)
 # Version written by the current RTL and SimBus.
 VERSION = 2
 # FEATURES bits.
-F_RQ_PIPE, F_QUEUE, F_PERF = 1, 2, 0x40
+F_RQ_PIPE, F_QUEUE, F_WIN, F_FUSE, F_PERF = 1, 2, 4, 8, 0x40
 # STATUS bits.
 BUSY, DONE, ERR = 1, 2, 4
 # MODE bits.
-MODE_DW, MODE_RAW = 1, 2
+MODE_DW, MODE_RAW, MODE_WIN, MODE_OUTX = 1, 2, 4, 8
 # CTRL commands.
 CMD_START, CMD_QUEUE, CMD_CLEAR = 0x01, 0x02, 0x80
 
 
 # Pack the configuration block 0x100..0x11F with CTRL=start as its last byte; descriptor_bytes() gives the
 # 22 config bytes alone (what a queue descriptor holds).
-def descriptor_bytes(K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, xbase=0, ybase=0):
+def descriptor_bytes(K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, xbase=0, ybase=0, win=None):
     # Same struct as the config frame.
-    return struct.pack("<HHHHHHhbbbBHH", K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, xbase, ybase)
+    d = struct.pack("<HHHHHHhbbbBHH", K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, xbase, ybase)
+    # Window block (builds with the window generator): 31 more bytes.
+    if win is not None:
+        d += struct.pack(WIN_FMT, *win)
+    return d
 
 
 # Pack the configuration block 0x100..0x11F with CTRL=start as its last byte.
@@ -80,6 +93,8 @@ def config_frame(K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act
 class CpuEngine:
     # Name shown in summaries.
     name = "cpu"
+    # No hardware features.
+    has_win = has_fuse = has_queue = False
     # The software engine has one contiguous weight store.
     lanes = 1
 
@@ -113,7 +128,10 @@ class CpuEngine:
         self.P[off:off + len(data)] = data
 
     # Run one job; x is a bytes-like buffer of int8 data; returns a list of ints.
-    def run(self, K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, x, xbase=0, ybase=0):
+    def run(self, K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, x, xbase=0, ybase=0, win=None):
+        # The software engine takes plain vectors only (the model builds them on the host).
+        if mode & (MODE_WIN | MODE_OUTX):
+            raise ValueError("the software engine has no window generator or fusion")
         # Weights of the N channels.
         w = to_i8_list(self.W[wbase:wbase + N * K])
         # Their parameter records.
@@ -148,6 +166,10 @@ class HwEngine:
         self.features = ident[7] if ident[1] >= 2 else 0
         # Descriptor queue and performance counters; the number of descriptor slots.
         self.has_queue, self.has_perf = bool(self.features & F_QUEUE), bool(self.features & F_PERF)
+        # Window generator and fusion (outputs into X).
+        self.has_win, self.has_fuse = bool(self.features & F_WIN), bool(self.features & F_FUSE)
+        # Config bytes in a descriptor of this build.
+        self.ncfg = NCFG + (NWIN if self.has_win else 0)
         self.queue_slots = (1 << bus.read_block(R_MAGIC + 8, 1)[0]) // DESC_BYTES if self.has_queue else 0
         # Weight bytes and parameter records per bank (the whole memory when there is one lane).
         self.w_cap = (1 << ident[2]) // self.lanes
@@ -216,11 +238,17 @@ class HwEngine:
 
     # Run one job on the FPGA and return the outputs as a list of ints.
     # x goes to X at xbase; the results are read from Y at ybase.
-    def run(self, K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, x, xbase=0, ybase=0):
+    def run(self, K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, x, xbase=0, ybase=0, win=None):
         # Bus shortcut.
         bus = self.bus
-        # Input vectors into X.
-        bus.write_block(X_ADDR + xbase, x)
+        # Input vectors (or the image, in window mode) into X; x=None means they are already there.
+        if x is not None:
+            bus.write_block(X_ADDR + xbase, x)
+        # Window block.
+        if mode & MODE_WIN:
+            if not self.has_win:
+                raise RuntimeError("this engine build has no window generator")
+            bus.write_block(R_WIN, struct.pack(WIN_FMT, *win))
         # Configuration, ending with the start command.
         bus.write_block(R_CFG, config_frame(K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, xbase, ybase))
         # Wait.
@@ -235,7 +263,7 @@ class HwEngine:
         return to_i8_list(bus.read_block(Y_ADDR + ybase, nvec * N))
 
     # Run several jobs back to back with one start. jobs is a list of job tuples
-    # (K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, xbase, ybase); their inputs
+    # (K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act_max, mode, xbase, ybase[, win]); their inputs
     # must already be in X and their outputs are left in Y (read them with read_y). Needs the queue feature.
     def run_queue(self, jobs):
         # Feature and capacity checks.
@@ -243,10 +271,15 @@ class HwEngine:
             raise RuntimeError("this engine build has no descriptor queue")
         if len(jobs) > self.queue_slots or len(jobs) > 255:
             raise ValueError("%d jobs, queue holds %d" % (len(jobs), self.queue_slots))
-        # Descriptors, 64 bytes per slot, in one block (the config bytes then padding).
+        # Descriptors, 64 bytes per slot, in one block (the config bytes then padding). A job tuple may end with
+        # a window tuple; builds with the window generator always store the window block (zeros if unused).
         blob = bytearray()
         for j in jobs:
-            blob += descriptor_bytes(*j) + bytes(DESC_BYTES - NCFG)
+            d = descriptor_bytes(*j)
+            # Jobs without a window still carry the (zero) block so every slot has the build's NCFG bytes.
+            if self.has_win and len(d) == NCFG:
+                d += bytes(NWIN)
+            blob += d + bytes(DESC_BYTES - len(d))
         # Write them, then the count and the start command in one frame (QCNT is at 0x118, CTRL at 0x11F).
         self.bus.write_block(D_ADDR, blob)
         self.bus.write_block(R_QCNT, bytes([len(jobs)]) + bytes(R_CTRL - R_QCNT - 1) + bytes([CMD_QUEUE]))
@@ -323,21 +356,71 @@ def job_cycles(K, N, nvec, shifts, mode, lanes=1, rq_mode=0):
     return job_stats(K, N, nvec, shifts, mode, lanes, rq_mode)[0]
 
 
+# Input vectors of a windowed job, exactly as the window generator walks them. mem holds the image at xbase.
+#   conv: per output pixel the taps (ky, kx, c);  depthwise: per pixel, for every output channel its taps (ky, kx)
+# of input channel oc // DM. Taps outside the image are the byte `pad` (which the input offset turns into 0).
+def window_vectors(mem, xbase, wv, K, N, nvec, dw, pad):
+    H, W, C, KH, KW, DH, DWD, SH, SW, DM, OW, IY0, IX0 = wv[:13]
+    out = bytearray()
+    for v in range(nvec):
+        # First tap of this pixel.
+        iy0, ix0 = IY0 + (v // OW) * SH, IX0 + (v % OW) * SW
+        for oc in range(N if dw else 1):
+            # Input channel of a depthwise output channel.
+            ic = oc // DM if dw else 0
+            for ky in range(KH):
+                for kx in range(KW):
+                    iy, ix = iy0 + ky * DH, ix0 + kx * DWD
+                    inside = 0 <= iy < H and 0 <= ix < W
+                    b = xbase + (iy * W + ix) * C
+                    if dw:
+                        out.append(mem[b + ic] if inside else pad)
+                    elif inside:
+                        out += mem[b:b + C]
+                    else:
+                        out += bytes([pad]) * C
+    return out
+
+
+# Window block of a convolution job, or None if some value does not fit the descriptor fields (then the host
+# must build the patches itself). Output rows r0.. of the layer are computed; xbase is where the image sits in X.
+#   H W C       input image (NHWC)              kh kw dh dw_   kernel size and dilation
+#   sh sw       strides                          ph pw          padding above / left
+#   dm          depth multiplier (depthwise)     ow             output pixels per row
+def window_block(H, W, C, kh, kw, dh, dw_, sh, sw, ph, pw, dm, ow, r0, xbase):
+    # Image row / column of the first tap and its X address.
+    iy0, ix0 = r0 * sh - ph, -pw
+    org = xbase + (iy0 * W + ix0) * C
+    # Byte steps.
+    swc, shwc, kxs, kys, xlen = sw * C, sh * W * C, dw_ * C, dh * W * C, H * W * C
+    # Field ranges.
+    if not (all(0 <= v < 65536 for v in (H, W, C, ow, swc, shwc, kxs, kys, xlen)) and H < 32768 and W < 32768
+            and all(0 <= v < 256 for v in (kh, kw, dh, dw_, sh, sw, dm))
+            and all(-32768 <= v < 32768 for v in (iy0, ix0, org))):
+        return None
+    return (H, W, C, kh, kw, dh, dw_, sh, sw, dm, ow, iy0, ix0, org, swc, shwc, kxs, kys, xlen)
+
+
 # Python model of the RTL behind the byte bus: lets the hardware driver run on a PC with no FPGA.
 # It is register-accurate (same map, same STATUS behaviour, same clock counts) and is what the RTL
 # testbench is checked against.
 class SimBus:
     # Default sizes match the tmf_engine.v defaults.
-    def __init__(self, w_aw=12, x_aw=10, y_aw=8, p_aw=10, lanes=1, rq_mode=0, queue=False, d_aw=9, perf=False):
+    def __init__(self, w_aw=12, x_aw=10, y_aw=8, p_aw=10, lanes=1, rq_mode=0, queue=False, d_aw=9, perf=False,
+                 win=False, fuse=False):
         # Address widths and build options.
         self.aw = (w_aw, x_aw, y_aw, p_aw)
         self.lanes, self.rq_mode, self.queue, self.d_aw, self.perf = lanes, rq_mode, queue, d_aw, perf
+        # Window generator and fusion; config bytes per descriptor.
+        self.win, self.fuse = win, fuse
+        self.ncfg = NCFG + (NWIN if win else 0)
         # Memories (W and P are bank-major: bank b starts at b * size / lanes).
         self.W, self.X, self.Y, self.P = bytearray(1 << w_aw), bytearray(1 << x_aw), bytearray(1 << y_aw), bytearray(1 << p_aw)
         # Descriptor RAM.
         self.D = bytearray(1 << d_aw) if queue else bytearray()
-        # Config registers 0x100..0x11F.
+        # Config registers 0x100..0x11F, window block 0x140..0x15E.
         self.cfg = bytearray(0x20)
+        self.wcfg = bytearray(NWIN)
         # STATUS, CYCLES, descriptors done, performance counters.
         self.status, self.cycle_count, self.qdone = 0, 0, 0
         self.pc = [0, 0, 0, 0]
@@ -366,8 +449,12 @@ class SimBus:
 
     # One byte write, exactly as the RTL decodes it.
     def write(self, a, v):
+        # Window block.
+        if self.win and R_WIN <= a < R_WIN + NWIN:
+            if not self.status & BUSY:
+                self.wcfg[a - R_WIN] = v
         # Config registers (ignored while busy, like the RTL).
-        if 0x100 <= a < 0x100 + NCFG or a == R_QCNT:
+        elif 0x100 <= a < 0x100 + NCFG or a == R_QCNT:
             # Store.
             if not self.status & BUSY:
                 self.cfg[a - 0x100] = v
@@ -392,6 +479,9 @@ class SimBus:
 
     # One byte read.
     def read(self, a):
+        # The window block is write-only (reads as zero).
+        if R_WIN <= a < R_WIN + NWIN:
+            return 0
         # Config read-back (and QCNT).
         if 0x100 <= a < 0x100 + NCFG or a == R_QCNT:
             return self.cfg[a - 0x100]
@@ -406,7 +496,8 @@ class SimBus:
             return (self.cycle_count >> (8 * (a - R_CYCLES))) & 0xFF
         # Identification block.
         if R_MAGIC <= a < R_MAGIC + 9:
-            feat = (F_RQ_PIPE if self.rq_mode == 1 else 0) | (F_QUEUE if self.queue else 0) | (F_PERF if self.perf else 0)
+            feat = ((F_RQ_PIPE if self.rq_mode == 1 else 0) | (F_QUEUE if self.queue else 0) | (F_WIN if self.win else 0)
+                    | (F_FUSE if self.fuse else 0) | (F_PERF if self.perf else 0))
             return (MAGIC, VERSION, self.aw[0], self.aw[1], self.aw[2], self.aw[3], self.lanes, feat, self.d_aw if self.queue else 0)[a - R_MAGIC]
         # Performance counters.
         if R_PERF <= a < R_PERF + 16:
@@ -437,6 +528,11 @@ class SimBus:
     def _job(self, cfgb):
         # Decode the configuration block.
         K, N, nvec, xs, wb, pb, ioff, zp, amin, amax, mode, xbase, ybase = struct.unpack_from("<HHHHHHhbbbBHH", cfgb, 0)
+        # Window mode and write-back to X are only honoured on builds that have them (the RTL ignores the bits).
+        winm = bool(mode & MODE_WIN) and self.win
+        outx = bool(mode & MODE_OUTX) and self.fuse
+        # Window block.
+        wv = struct.unpack_from(WIN_FMT, cfgb, NCFG) if self.win else None
         # Lanes and bank geometry.
         L = self.lanes
         bw, bp = len(self.W) // L, len(self.P) // L
@@ -446,6 +542,8 @@ class SimBus:
         # Empty job: error, nothing computed.
         if K == 0 or N == 0 or nvec == 0:
             return False, 0, 0, 0, 0
+        # Output memory (X when fused).
+        osize = len(self.X) if outx else len(self.Y)
         # Same per-group bounds checks as the RTL, walking the groups in order.
         ys, bad = ybase, False
         for v in range(nvec):
@@ -456,7 +554,8 @@ class SimBus:
                 row = o // L
                 xrow = xbase + v * xs + (o * K if dw else 0)
                 # Memory limits.
-                if xrow + K > len(self.X) or wb + row * K + K > bw or (pb + row) * PARAM_BYTES + PARAM_BYTES > bp or ys + cnt * ob > len(self.Y):
+                xbad = (xbase + wv[18] > len(self.X)) if winm else (xrow + K > len(self.X))
+                if xbad or wb + row * K + K > bw or (pb + row) * PARAM_BYTES + PARAM_BYTES > bp or ys + cnt * ob > osize:
                     bad = True
                 ys += cnt * ob
                 o += cnt
@@ -472,16 +571,22 @@ class SimBus:
             b, r = o % L, o // L
             w += self.W[b * bw + wb + r * K: b * bw + wb + (r + 1) * K]
             p += self.P[b * bp + (pb + r) * PARAM_BYTES: b * bp + (pb + r + 1) * PARAM_BYTES]
+        # Window mode: build the input vectors the way the generator walks them; padding adds nothing.
+        if winm:
+            xin, xs = to_i8_list(window_vectors(self.X, xbase, wv, K, N, nvec, dw, (-ioff) & 0xFF)), K * (N if dw else 1)
+        else:
+            xin = to_i8_list(self.X[xbase:])
         # Compute with the shared kernel (the input vectors start at xbase).
-        y = dot_requant(to_i8_list(self.X[xbase:]), to_i8_list(w), p, K, N, nvec, xs, ioff, zp, amin, amax, dw=dw, raw=bool(mode & MODE_RAW))
-        # Store results at ybase.
+        y = dot_requant(xin, to_i8_list(w), p, K, N, nvec, xs, ioff, zp, amin, amax, dw=dw, raw=bool(mode & MODE_RAW))
+        # Store results at ybase (in Y, or in X when fused).
+        mem = self.X if outx else self.Y
         if mode & MODE_RAW:
             # Little-endian int32 words.
-            self.Y[ybase:ybase + 4 * len(y)] = struct.pack("<%di" % len(y), *y)
+            mem[ybase:ybase + 4 * len(y)] = struct.pack("<%di" % len(y), *y)
         else:
             # Bytes.
             for i, v in enumerate(y):
-                self.Y[ybase + i] = v & 0xFF
+                mem[ybase + i] = v & 0xFF
         # Exact clock count and counters.
         shifts = [struct.unpack_from("<b", p, o * PARAM_BYTES + 8)[0] for o in range(N)]
         cyc, mac, stall = job_stats(K, N, nvec, shifts, mode, L, self.rq_mode)
@@ -490,7 +595,7 @@ class SimBus:
     # CTRL = start: one job from the config registers.
     def _start(self):
         # Run it.
-        ok, cyc, mac, stall, outb = self._job(bytes(self.cfg[:NCFG]))
+        ok, cyc, mac, stall, outb = self._job(bytes(self.cfg[:NCFG]) + bytes(self.wcfg if self.win else b""))
         # Counters restart with every start.
         self.pc = [mac, stall, outb, 1] if ok else [0, 0, 0, 0]
         # Result.
@@ -507,17 +612,20 @@ class SimBus:
         # Counters restart.
         self.pc = [0, 0, 0, 0]
         total, self.qdone = 0, 0
-        # Each descriptor: 23 clocks to load (22 bytes plus pipeline), then the job.
+        # Each descriptor: ncfg + 1 clocks to load, then the job.
         for i in range(n):
-            # The descriptor becomes the config registers.
-            self.cfg[:NCFG] = self.D[i * DESC_BYTES: i * DESC_BYTES + NCFG]
-            ok, cyc, mac, stall, outb = self._job(bytes(self.cfg[:NCFG]))
+            # The descriptor becomes the config registers (and the window block).
+            d = self.D[i * DESC_BYTES: i * DESC_BYTES + self.ncfg]
+            self.cfg[:NCFG] = d[:NCFG]
+            if self.win:
+                self.wcfg[:] = d[NCFG:]
+            ok, cyc, mac, stall, outb = self._job(bytes(d))
             # Failed job: stop here.
             if not ok:
                 self.status = ERR | DONE
                 return
-            # Accumulate.
-            total += NCFG + 1 + cyc
+            # Accumulate (the descriptor load takes ncfg + 1 clocks).
+            total += self.ncfg + 1 + cyc
             self.pc[0] += mac
             self.pc[1] += stall
             self.pc[2] += outb

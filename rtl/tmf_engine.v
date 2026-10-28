@@ -16,11 +16,15 @@
 //   bus_addr stable at least one clock before bus_rd; bus_rdata is valid in the bus_rd clock;
 //   bus_wr is a one-clock strobe with bus_addr/bus_wdata. Register map: see tinyml_fpga/engine.py.
 //   0x100-0x115 config (RW), 0x118 QCNT, 0x119 QDONE, 0x11F CTRL (W), 0x120 STATUS, 0x121-0x124 CYCLES,
-//   0x130-0x138 ID (RO), 0x160-0x16F performance counters (RO)
+//   0x130-0x138 ID (RO), 0x140-0x15E window descriptor (RW, HAS_WIN), 0x160-0x16F performance counters (RO)
 //   0x1000 X, 0x2000 Y (RO from the bus), 0x3000 P (16 B per channel), 0x4000 D (job descriptors), 0x8000 W
 // With HAS_QUEUE a list of job descriptors (the same bytes as the config block, 64 B per slot) can be written
 // to D and run back to back with one CTRL = 0x02, which saves the host a configure / start / poll round trip
 // per job. HAS_PERF adds counters for MAC clocks, stall clocks, output bytes and finished jobs.
+// HAS_WIN adds an input-window generator: with MODE bit 2 the engine walks the (padded, strided, dilated)
+// convolution window of every output pixel straight out of an NHWC image in X, so the host no longer builds
+// im2col patches. HAS_FUSE lets a job write its outputs into X (MODE bit 3) instead of Y, so the next layer of
+// a queue reads them in place and a whole run of layers needs one start.
 // Bus writes to config and memories are ignored while the engine is busy.
 
 `default_nettype none
@@ -34,7 +38,9 @@ module tmf_engine #(
     parameter RQ_MODE = 0,               // requantiser: 0 serial (smallest), 1 pipelined (needs 4 multipliers)
     parameter HAS_QUEUE = 0,             // job descriptor queue (CTRL 0x02 runs QCNT descriptors from D)
     parameter D_AW    = 9,               // descriptor RAM address width (64 B per descriptor, max 12)
-    parameter HAS_PERF = 0               // performance counters at 0x160
+    parameter HAS_PERF = 0,              // performance counters at 0x160
+    parameter HAS_WIN  = 0,              // input window generator (MODE bit 2)
+    parameter HAS_FUSE = 0               // outputs can be written into X (MODE bit 3)
 ) (
     input  wire        clk,              // clock
     input  wire        rst,              // synchronous reset, active high
@@ -64,11 +70,13 @@ module tmf_engine #(
     // LANES as a 4-bit constant.
     localparam [3:0] LANES4 = LANES;
     // Feature bits reported in the ID block.
-    localparam [7:0] FEATURES = {1'b0, (HAS_PERF != 0), 4'd0, (HAS_QUEUE != 0), (RQ_MODE == 1)};
+    localparam [7:0] FEATURES = {1'b0, (HAS_PERF != 0), 2'd0, (HAS_FUSE != 0), (HAS_WIN != 0), (HAS_QUEUE != 0), (RQ_MODE == 1)};
     // Descriptor RAM size in bytes.
     localparam [32:0] DSIZE = 33'd1 << D_AW;
     // Configuration bytes held in a descriptor.
-    localparam NCFG = 22;
+    localparam NCFG = (HAS_WIN != 0) ? 53 : 22;
+    // Width of the output write address (the outputs may go to X).
+    localparam YW = (HAS_FUSE != 0 && X_AW > Y_AW) ? X_AW : Y_AW;
 
     // Sequencer states.
     localparam [3:0] S_IDLE  = 4'd0;     // waiting for CTRL.start
@@ -96,10 +104,12 @@ module tmf_engine #(
     wire sel_d   = (bus_addr[15:12] == 4'h4);
     // Address is in the W window.
     wire sel_w   = bus_addr[15];
-    // Address is a config byte; its index in the descriptor-ordered array (0x100.. = 0..21).
-    wire cfg_hit = sel_reg && (bus_addr[7:0] < NCFG);
+    // Address is in the window descriptor block 0x140..0x15E.
+    wire win_reg = (HAS_WIN != 0) && sel_reg && (bus_addr[7:6] == 2'b01) && (bus_addr[5:0] <= 6'd30);
+    // Address is a config byte; its index in the descriptor-ordered array (0x100.. = 0..21, 0x140.. = 22..52).
+    wire cfg_hit = (sel_reg && (bus_addr[7:0] < 8'd22)) || win_reg;
     // Index of the addressed config byte.
-    wire [5:0] cfg_idx = bus_addr[5:0];
+    wire [5:0] cfg_idx = win_reg ? (6'd22 + bus_addr[5:0]) : bus_addr[5:0];
     // Weight bank addressed by the bus.
     wire [2:0] bank_w = (bus_addr >> WA) & (LANES - 1);
     // Parameter bank addressed by the bus.
@@ -132,12 +142,57 @@ module tmf_engine #(
     wire cDW  = cfg[17][0];
     // Raw int32 output mode bit.
     wire cRAW = cfg[17][1];
+    // Window mode bit (HAS_WIN).
+    wire cWIN  = (HAS_WIN != 0) && cfg[17][2];
+    // Write the outputs into X (HAS_FUSE).
+    wire cOUTX = (HAS_FUSE != 0) && cfg[17][3];
     // Input base offset in X.
     wire [15:0] cXBASE = {cfg[19], cfg[18]};
     // Output base offset in Y.
     wire [15:0] cYBASE = {cfg[21], cfg[20]};
     // Number of descriptors to run (queue mode).
     reg  [7:0] cQCNT;
+    // Window descriptor bytes (zero without HAS_WIN).
+    wire [7:0] wf [0:30];
+    genvar gi;
+    generate
+        for (gi = 0; gi < 31; gi = gi + 1) begin : g_wf
+            if (HAS_WIN != 0) begin : g_on
+                // Byte gi of the window block.
+                assign wf[gi] = cfg[22 + gi];
+            end else begin : g_off
+                // No window generator: zero.
+                assign wf[gi] = 8'h00;
+            end
+        end
+    endgenerate
+    // Image height, width, channels.
+    wire signed [15:0] cH   = {wf[1],  wf[0]};
+    wire signed [15:0] cWW  = {wf[3],  wf[2]};
+    wire        [15:0] cC   = {wf[5],  wf[4]};
+    // Kernel height and width.
+    wire [7:0] cKH = wf[6];
+    wire [7:0] cKW = wf[7];
+    // Dilation (rows, columns), stride (rows, columns), depth multiplier.
+    wire [7:0] cDH = wf[8];
+    wire [7:0] cDWD = wf[9];
+    wire [7:0] cSH = wf[10];
+    wire [7:0] cSW = wf[11];
+    wire [7:0] cDM = wf[12];
+    // Output pixels per row.
+    wire [15:0] cOW = {wf[14], wf[13]};
+    // Input row and column of the first window's top-left tap.
+    wire signed [15:0] cIY0 = {wf[16], wf[15]};
+    wire signed [15:0] cIX0 = {wf[18], wf[17]};
+    // X address of that tap (XBASE included).
+    wire signed [15:0] cORG = {wf[20], wf[19]};
+    // Byte steps: one output column, one output row, one kernel column, one kernel row.
+    wire [15:0] cSWC  = {wf[22], wf[21]};
+    wire [15:0] cSHWC = {wf[24], wf[23]};
+    wire [15:0] cKXS  = {wf[26], wf[25]};
+    wire [15:0] cKYS  = {wf[28], wf[27]};
+    // Bytes of image the job may touch.
+    wire [15:0] cXLEN = {wf[30], wf[29]};
 
     // ---------------------------------------------------------------- status
     // Engine running.
@@ -186,6 +241,18 @@ module tmf_engine #(
     reg [5:0]  ld;
     // Descriptor RAM read data.
     wire [7:0] d_q;
+    // Window generator state (HAS_WIN): row and column of the current tap, of the pixel's first tap, and the
+    // X address of the pixel (vbase), of its first row (vrow), of the current kernel column (xks) and row (xrs).
+    reg signed [15:0] iy, ix, iy0, ix0;
+    // (16 bits are enough: X is at most 4096 bytes and the arithmetic wraps like the address does.)
+    reg [15:0] vbase, vrow, xks, xrs;
+    // Channel inside a kernel tap, kernel column, output column in the row.
+    reg [15:0] wc;
+    reg [7:0]  wkx;
+    reg [15:0] wox;
+    // Depthwise: input channel offset of the current output channel and position inside its depth multiplier.
+    reg [15:0] icoff;
+    reg [7:0]  dmc;
     // Pipeline stage 1 valid (RAM data available).
     reg v1;
     // Pipeline stage 2 valid (product available).
@@ -204,8 +271,12 @@ module tmf_engine #(
     wire [2:0]  l0   = oi[2:0] & (LANES - 1);
     // Output bytes of this group (four per channel in raw mode).
     wire [32:0] gob  = cRAW ? {27'd0, cnt, 2'b00} : {29'd0, cnt};
+    // The window or the vector slice fits in X.
+    wire        x_ok = cWIN ? ({17'd0, cXBASE} + {17'd0, cXLEN} <= XSIZE) : (xrow + k33 <= XSIZE);
+    // The output goes to X or to Y.
+    wire        y_ok = (ys + gob <= (cOUTX ? XSIZE : YSIZE));
     // The next group fits in every memory.
-    wire        fits = (xrow + k33 <= XSIZE) && (wrow + k33 <= BWSIZE) && (pp + 33'd16 <= BPSIZE) && (ys + gob <= YSIZE);
+    wire        fits = x_ok && (wrow + k33 <= BWSIZE) && (pp + 33'd16 <= BPSIZE) && y_ok;
     // Last group of a vector.
     wire        last_o = ({1'b0, oi} + {13'd0, cnt} >= {1'b0, cN});
     // Last vector of the job.
@@ -222,13 +293,17 @@ module tmf_engine #(
     // Y write enable from the output unit.
     reg        y_we;
     // Y write address.
-    reg [Y_AW-1:0] y_wa;
+    reg [YW-1:0] y_wa;
     // Y write data.
     reg [7:0]  y_wd;
     // Bus write is allowed (engine idle).
     wire bus_wr_ok = bus_wr & ~busy;
     // Input byte plus the input offset (-255 .. 255), shared by all lanes.
-    wire signed [8:0]  xoff = $signed(x_q) + $signed(cINOFF[8:0]);
+    wire signed [8:0]  xoff_r = $signed(x_q) + $signed(cINOFF[8:0]);
+    // Window tap outside the image (registered with the RAM read): it contributes zero.
+    reg pad1;
+    // The byte the lanes multiply.
+    wire signed [8:0]  xoff = pad1 ? 9'sd0 : xoff_r;
     // The MAC pipeline advances while the lane controls below are valid.
     wire par_en   = busy && (st == S_PAR) && (pc != 4'd0);
     // Bias load strobe.
@@ -236,12 +311,21 @@ module tmf_engine #(
     // Parameter RAM read address (local, shared by all banks).
     wire [32:0] p_ra = pp + {29'd0, pc};
 
+    // Output address zero-extended so it can address X.
+    wire [11:0] y_wa12 = y_wa;
     // This contains the instantiation for the X RAM (input vectors)
-    tmf_ram #(.AW(X_AW)) u_x (.clk(clk), .we(bus_wr_ok & sel_x), .waddr(bus_addr[X_AW-1:0]), .wdata(bus_wdata),
+    tmf_ram #(.AW(X_AW)) u_x (.clk(clk), .we((bus_wr_ok & sel_x) | (y_we & cOUTX)),
+                               .waddr((HAS_FUSE != 0 && busy) ? y_wa12[X_AW-1:0] : bus_addr[X_AW-1:0]),
+                               .wdata((HAS_FUSE != 0 && busy) ? y_wd : bus_wdata),
                                .raddr(busy ? xp[X_AW-1:0] : bus_addr[X_AW-1:0]), .q(x_q));
     // This contains the instantiation for the Y RAM (outputs)
-    tmf_ram #(.AW(Y_AW)) u_y (.clk(clk), .we(y_we), .waddr(y_wa), .wdata(y_wd),
+    tmf_ram #(.AW(Y_AW)) u_y (.clk(clk), .we(y_we & ~cOUTX), .waddr(y_wa12[Y_AW-1:0]), .wdata(y_wd),
                                .raddr(bus_addr[Y_AW-1:0]), .q(y_q));
+
+    // Tap outside the image (only in window mode).
+    wire pad_now = cWIN && (iy < 16'sd0 || iy >= cH || ix < 16'sd0 || ix >= cWW);
+    // Register it with the RAM read.
+    always @(posedge clk) pad1 <= pad_now && (st == S_DOT);
 
     // Descriptor RAM (only with HAS_QUEUE).
     generate
@@ -341,7 +425,7 @@ module tmf_engine #(
                 // Write strobe.
                 y_we  <= 1'b1;
                 // At the output pointer.
-                y_wa  <= wy[Y_AW-1:0];
+                y_wa  <= wy[YW-1:0];
                 // Byte raw_b of the current lane's accumulator.
                 y_wd  <= s_acc[32*s_lane + 8*raw_b +: 8];
                 // Advance the output pointer.
@@ -363,7 +447,7 @@ module tmf_engine #(
                     // Write strobe.
                     y_we  <= 1'b1;
                     // At the output pointer.
-                    y_wa  <= wy[Y_AW-1:0];
+                    y_wa  <= wy[YW-1:0];
                     // Result byte.
                     y_wd  <= rq_y;
                     // Advance the output pointer.
@@ -426,8 +510,8 @@ module tmf_engine #(
     always @* begin
         // Default for unmapped addresses.
         bus_rdata = 8'h00;
-        // Config read-back.
-        if (cfg_hit) bus_rdata = cfg[cfg_idx];
+        // Config read-back (the window block is write-only: it reads as zero).
+        if (cfg_hit && !win_reg) bus_rdata = cfg[cfg_idx];
         // Descriptor count.
         if (sel_reg && bus_addr[7:0] == 8'h18) bus_rdata = cQCNT;
         // Descriptors finished in the last queue run.
@@ -613,6 +697,20 @@ module tmf_engine #(
                         pp     <= {13'd0, cPBASE, 4'd0};
                         // Output scheduling starts at the Y base.
                         ys     <= {17'd0, cYBASE};
+                        // Window mode: first pixel.
+                        if (cWIN) begin
+                            // X address of its first tap.
+                            vbase <= cORG;
+                            vrow  <= cORG;
+                            // Its image row and column.
+                            iy0   <= cIY0;
+                            ix0   <= cIX0;
+                            // First output column.
+                            wox   <= 16'd0;
+                            // First depthwise channel.
+                            icoff <= 16'd0;
+                            dmc   <= 8'd0;
+                        end
                         // Check bounds first.
                         st     <= S_CHK;
                     end
@@ -640,7 +738,16 @@ module tmf_engine #(
                 // Load the operands and start the dot product.
                 S_INIT: begin
                     // X read pointer.
-                    xp  <= xrow;
+                    xp  <= cWIN ? {17'd0, vbase + icoff} : xrow;
+                    // Window generator: first tap of the pixel.
+                    if (cWIN) begin
+                        xks <= vbase + icoff;
+                        xrs <= vbase + icoff;
+                        iy  <= iy0;
+                        ix  <= ix0;
+                        wc  <= 16'd0;
+                        wkx <= 8'd0;
+                    end
                     // W read pointer.
                     wp  <= wrow;
                     // MAC counter.
@@ -650,8 +757,31 @@ module tmf_engine #(
                 end
                 // One RAM read per clock; the lanes add the products.
                 S_DOT: begin
-                    // Next X byte.
-                    xp <= xp + 33'd1;
+                    // Next X byte: the next channel, kernel column or kernel row of the window, or the next byte.
+                    if (!cWIN) begin
+                        // Plain vectors.
+                        xp <= xp + 33'd1;
+                    end else if (!cDW && wc != cC - 16'd1) begin
+                        // Next channel of this tap.
+                        wc <= wc + 16'd1;
+                        xp <= xp + 33'd1;
+                    end else if (wkx != cKW - 8'd1) begin
+                        // Next kernel column.
+                        wc  <= 16'd0;
+                        wkx <= wkx + 8'd1;
+                        ix  <= ix + $signed({8'd0, cDWD});
+                        xks <= xks + cKXS;
+                        xp  <= {17'd0, xks + cKXS};
+                    end else begin
+                        // Next kernel row.
+                        wc  <= 16'd0;
+                        wkx <= 8'd0;
+                        ix  <= ix0;
+                        iy  <= iy + $signed({8'd0, cDH});
+                        xrs <= xrs + cKYS;
+                        xks <= xrs + cKYS;
+                        xp  <= {17'd0, xrs + cKYS};
+                    end
                     // Next W byte.
                     wp <= wp + 33'd1;
                     // Count the issue.
@@ -679,6 +809,24 @@ module tmf_engine #(
                             vi   <= vi + 16'd1;
                             // First channel again.
                             oi   <= 16'd0;
+                            // Window mode: next output pixel (right, or the start of the next row).
+                            if (cWIN) begin
+                                // Depthwise channel counters restart.
+                                icoff <= 16'd0;
+                                dmc   <= 8'd0;
+                                // Last column: down by the row stride.
+                                if (wox == cOW - 16'd1) begin
+                                    wox   <= 16'd0;
+                                    iy0   <= iy0 + $signed({8'd0, cSH});
+                                    ix0   <= cIX0;
+                                    vrow  <= vrow + cSHWC;
+                                    vbase <= vrow + cSHWC;
+                                end else begin
+                                    wox   <= wox + 16'd1;
+                                    ix0   <= ix0 + $signed({8'd0, cSW});
+                                    vbase <= vbase + cSWC;
+                                end
+                            end
                             // Next vector start.
                             xvec <= xvec + xs33;
                             // Its first slice.
@@ -695,6 +843,16 @@ module tmf_engine #(
                         oi <= oi + {12'd0, cnt};
                         // Depthwise: next channel has its own X slice.
                         if (cDW) xrow <= xrow + k33;
+                        // Window depthwise: next input channel after DM output channels.
+                        if (cWIN && cDW) begin
+                            // Depth multiplier exhausted.
+                            if (dmc == cDM - 8'd1) begin
+                                dmc   <= 8'd0;
+                                icoff <= icoff + 16'd1;
+                            end else begin
+                                dmc <= dmc + 8'd1;
+                            end
+                        end
                         // Local row advances after the last lane of a bank row (always for non-depthwise groups).
                         if (!cDW || ((oi[2:0] & (LANES - 1)) == (LANES - 1))) begin
                             // Next weight row.

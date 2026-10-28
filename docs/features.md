@@ -37,3 +37,35 @@ Six small jobs take 5 link frames through the queue instead of 12 (a UART frame 
 | base | 1,986 | 1,042 | 13 |
 | + `HAS_QUEUE` | 2,184 | 1,077 | 14 |
 | + `HAS_PERF` | 2,292 | 1,186 | 13 |
+
+## v0.5: on-chip window generator and layer fusion
+
+`HAS_WIN=1` adds a window generator. With MODE bit 2 (`MODE_WIN`) a convolution or depthwise job reads the **image itself** (NHWC, int8) from X and walks the window of every output pixel with address counters: kernel size, stride, dilation, top / left padding and the depth multiplier come from a 31-byte window block (0x140..0x15E, write-only; in a descriptor it follows the 22 config bytes). Taps outside the image are forced to zero in the datapath (the same as a padding byte equal to the input zero point), so the host neither builds im2col patches nor sends them: a 3×3 conv over C channels used to ship 9·C bytes per output pixel and now ships each input byte once. The clock count of a job is unchanged: the address generator runs alongside the multiply-accumulate loop and costs no clocks.
+
+```python
+win = window_block(H, W, C, kh, kw, dh, dw, sh, sw, ph, pw, dm, ow, r0, xbase)   # None if a field does not fit
+eng.run(K, N, nrows * ow, 0, wbase, pbase, in_off, zp, amin, amax, MODE_WIN, image, xbase, ybase, win)
+```
+
+`r0` is the first output row: a layer whose outputs do not fit Y is cut into jobs of several rows each, all reading the same image. `Model` does all of this by itself when the engine has the feature and every descriptor field can hold the geometry; otherwise a layer falls back to host-built patches.
+
+`HAS_FUSE=1` lets a job write its outputs into X instead of Y (MODE bit 3, `MODE_OUTX`; YBASE is then an X address). Together with the queue, consecutive layers run as one chain: each layer reads the previous layer's output where it was written, two regions of X are used alternately, and only the last layer writes to Y. Pure reshapes (flatten) between layers cost nothing. `Model` plans such chains at load time (weights resident, one job per layer, everything fitting X, Y and the descriptor slots) and runs each with one descriptor upload and one start. Pooling and other host ops end a chain, and debugging runs (`invoke(keep=True)`, used by the LiteRT checker) never fuse so that every intermediate tensor exists.
+
+Link traffic of one inference (bus frames / bytes, `tools/bench_link.py`; a UART frame costs a round trip):
+
+| Build | m_fc | m_cnn | m_avg |
+|---|---|---|---|
+| host im2col | 8 / 212 | 31 / 2,630 | 22 / 1,801 |
+| `HAS_WIN` | 8 / 212 | 22 / 1,243 | 17 / 919 |
+| `HAS_WIN` + `HAS_QUEUE` + `HAS_FUSE` | 5 / 215 | 14 / 987 | 10 / 540 |
+
+Cost (engine only, 1 lane, serial requantiser, Yosys LUT4 / FF; `tools/measure.py`):
+
+| Build | LUT4 | FF | RAM 4k blocks |
+|---|---|---|---|
+| base | 2,061 | 1,058 | 13 |
+| + `HAS_FUSE` | 2,090 | 1,088 | 13 |
+| + `HAS_WIN` | 2,882 | 1,477 | 13 |
+| + `HAS_WIN`, `HAS_FUSE`, `HAS_QUEUE` | 3,101 | 1,526 | 14 |
+
+The window generator is the largest single feature (the adders for the address counters and the 31-byte block); it pays off when the link, not the FPGA, limits the inference time, which is the usual case behind a UART or a slow SPI.
