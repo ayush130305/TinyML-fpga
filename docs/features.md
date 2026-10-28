@@ -69,3 +69,19 @@ Cost (engine only, 1 lane, serial requantiser, Yosys LUT4 / FF; `tools/measure.p
 | + `HAS_WIN`, `HAS_FUSE`, `HAS_QUEUE` | 3,101 | 1,526 | 14 |
 
 The window generator is the largest single feature (the adders for the address counters and the 31-byte block); it pays off when the link, not the FPGA, limits the inference time, which is the usual case behind a UART or a slow SPI.
+
+## v0.6: INT4 / INT8 mixed precision
+
+`HAS_W4=1` lets a layer keep its weights as signed 4-bit numbers, two per W byte (low nibble = even index; a row of K weights takes ceil(K/2) bytes and rows start on a byte). A layer selects it with MODE bit 4 (`MODE_W4`), so int8 and int4 layers mix freely in one model. The multiply-accumulate datapath is unchanged: a nibble selector in front of every lane sign-extends the weight to 8 bits, and the weight address advances every second clock. A layer takes the same number of clocks as at 8 bits and its weights take half the weight RAM, so models up to twice the size stay resident (no per-inference weight upload) and a smaller `W_AW` is enough.
+
+The accuracy cost is handled on the PC. `python -m tinyml_fpga convert M.tflite --int4 auto` re-quantises layers to 4 bits per output channel (`w8 ≈ r·w4`, `r = max|w| / 7`) and folds the row scale into the layer's bias and fixed-point multiplier, so the engine's output scale is unchanged. `auto` leaves the first and last weight layer at 8 bits (the most sensitive ones), `all` converts everything, `1,2` picks weight layers by number. The command prints each layer's weight error and how far the model's outputs move against the int8 model. The 4-bit model is **not** bit-exact with LiteRT, by nature; what stays exact is hardware against software: the engine, the register model and the CPU engine agree on every output of the 4-bit model.
+
+| Model | .tmf bytes int8 | int4 `all` | int4 `auto` |
+|---|---|---|---|
+| m_fc | 3,713 | 2,549 | 3,713 (nothing in the middle) |
+| m_cnn | 3,565 | 2,882 | 2,975 |
+| m_avg | 2,069 | 1,877 | 2,055 |
+
+Measured on the digits samples: `m_cnn` int4 `all` keeps the top-1 label on 100% of 40 test images (`transform.compare`). A runtime that meets a 4-bit layer on an engine without `HAS_W4` runs that layer in software, so the same `.tmf` works everywhere.
+
+Cost (engine only, Yosys LUT4): +48 with 1 lane (2,050 → 2,098), +87 with 4 lanes (3,047 → 3,134) for the nibble selectors and the row-stride logic; no extra RAM or multipliers.

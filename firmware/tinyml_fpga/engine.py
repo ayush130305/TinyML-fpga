@@ -12,7 +12,8 @@
 #   0x10E OUT_ZP   s8    output zero point
 #   0x10F ACT_MIN  s8    clamp low
 #   0x110 ACT_MAX  s8    clamp high
-#   0x111 MODE     u8    bit0 depthwise (channel o uses x[o*K..]), bit1 raw int32 output
+#   0x111 MODE     u8    bit0 depthwise (channel o uses x[o*K..]), bit1 raw int32 output, bit2 window mode,
+#                        bit3 write outputs to X, bit4 4-bit weights (rows of ceil(K/2) bytes, low nibble first)
 #   0x112 XBASE    u16   byte offset of the job's first input vector in X (version 2)
 #   0x114 YBASE    u16   byte offset of the job's first output in Y (version 2)
 #   0x140 window block, 31 bytes, write-only (builds with the window generator, MODE bit 2): see WIN_FMT
@@ -36,7 +37,7 @@
 
 import struct
 
-from .kernels import PARAM_BYTES, dot_requant, to_i8_list
+from .kernels import PARAM_BYTES, dot_requant, to_i8_list, unpack_w4, row_bytes
 
 # Register addresses.
 R_CFG, R_CTRL, R_STATUS, R_CYCLES = 0x100, 0x11F, 0x120, 0x121
@@ -61,11 +62,11 @@ VERSIONS = (1, 2)
 # Version written by the current RTL and SimBus.
 VERSION = 2
 # FEATURES bits.
-F_RQ_PIPE, F_QUEUE, F_WIN, F_FUSE, F_PERF = 1, 2, 4, 8, 0x40
+F_RQ_PIPE, F_QUEUE, F_WIN, F_FUSE, F_W4, F_PERF = 1, 2, 4, 8, 0x10, 0x40
 # STATUS bits.
 BUSY, DONE, ERR = 1, 2, 4
 # MODE bits.
-MODE_DW, MODE_RAW, MODE_WIN, MODE_OUTX = 1, 2, 4, 8
+MODE_DW, MODE_RAW, MODE_WIN, MODE_OUTX, MODE_W4 = 1, 2, 4, 8, 16
 # CTRL commands.
 CMD_START, CMD_QUEUE, CMD_CLEAR = 0x01, 0x02, 0x80
 
@@ -93,8 +94,9 @@ def config_frame(K, N, nvec, xstride, wbase, pbase, in_off, out_zp, act_min, act
 class CpuEngine:
     # Name shown in summaries.
     name = "cpu"
-    # No hardware features.
+    # No hardware features, but 4-bit weights are supported in software.
     has_win = has_fuse = has_queue = False
+    has_w4 = True
     # The software engine has one contiguous weight store.
     lanes = 1
 
@@ -132,8 +134,11 @@ class CpuEngine:
         # The software engine takes plain vectors only (the model builds them on the host).
         if mode & (MODE_WIN | MODE_OUTX):
             raise ValueError("the software engine has no window generator or fusion")
-        # Weights of the N channels.
-        w = to_i8_list(self.W[wbase:wbase + N * K])
+        # Weights of the N channels (4-bit weights are packed two per byte).
+        if mode & MODE_W4:
+            w = unpack_w4(self.W[wbase:wbase + N * row_bytes(K, True)], K, N)
+        else:
+            w = to_i8_list(self.W[wbase:wbase + N * K])
         # Their parameter records.
         p = self.P[pbase * PARAM_BYTES:(pbase + N) * PARAM_BYTES]
         # Compute.
@@ -168,6 +173,8 @@ class HwEngine:
         self.has_queue, self.has_perf = bool(self.features & F_QUEUE), bool(self.features & F_PERF)
         # Window generator and fusion (outputs into X).
         self.has_win, self.has_fuse = bool(self.features & F_WIN), bool(self.features & F_FUSE)
+        # 4-bit weights.
+        self.has_w4 = bool(self.features & F_W4)
         # Config bytes in a descriptor of this build.
         self.ncfg = NCFG + (NWIN if self.has_win else 0)
         self.queue_slots = (1 << bus.read_block(R_MAGIC + 8, 1)[0]) // DESC_BYTES if self.has_queue else 0
@@ -407,12 +414,12 @@ def window_block(H, W, C, kh, kw, dh, dw_, sh, sw, ph, pw, dm, ow, r0, xbase):
 class SimBus:
     # Default sizes match the tmf_engine.v defaults.
     def __init__(self, w_aw=12, x_aw=10, y_aw=8, p_aw=10, lanes=1, rq_mode=0, queue=False, d_aw=9, perf=False,
-                 win=False, fuse=False):
+                 win=False, fuse=False, w4=False):
         # Address widths and build options.
         self.aw = (w_aw, x_aw, y_aw, p_aw)
         self.lanes, self.rq_mode, self.queue, self.d_aw, self.perf = lanes, rq_mode, queue, d_aw, perf
         # Window generator and fusion; config bytes per descriptor.
-        self.win, self.fuse = win, fuse
+        self.win, self.fuse, self.w4 = win, fuse, w4
         self.ncfg = NCFG + (NWIN if win else 0)
         # Memories (W and P are bank-major: bank b starts at b * size / lanes).
         self.W, self.X, self.Y, self.P = bytearray(1 << w_aw), bytearray(1 << x_aw), bytearray(1 << y_aw), bytearray(1 << p_aw)
@@ -497,7 +504,7 @@ class SimBus:
         # Identification block.
         if R_MAGIC <= a < R_MAGIC + 9:
             feat = ((F_RQ_PIPE if self.rq_mode == 1 else 0) | (F_QUEUE if self.queue else 0) | (F_WIN if self.win else 0)
-                    | (F_FUSE if self.fuse else 0) | (F_PERF if self.perf else 0))
+                    | (F_FUSE if self.fuse else 0) | (F_W4 if self.w4 else 0) | (F_PERF if self.perf else 0))
             return (MAGIC, VERSION, self.aw[0], self.aw[1], self.aw[2], self.aw[3], self.lanes, feat, self.d_aw if self.queue else 0)[a - R_MAGIC]
         # Performance counters.
         if R_PERF <= a < R_PERF + 16:
@@ -539,6 +546,9 @@ class SimBus:
         # Output bytes per result and depthwise flag.
         ob = 4 if mode & MODE_RAW else 1
         dw = bool(mode & MODE_DW)
+        # 4-bit weights are only honoured on builds that have them; rows are then ceil(K / 2) bytes.
+        w4 = bool(mode & MODE_W4) and self.w4
+        rb = row_bytes(K, w4)
         # Empty job: error, nothing computed.
         if K == 0 or N == 0 or nvec == 0:
             return False, 0, 0, 0, 0
@@ -555,7 +565,7 @@ class SimBus:
                 xrow = xbase + v * xs + (o * K if dw else 0)
                 # Memory limits.
                 xbad = (xbase + wv[18] > len(self.X)) if winm else (xrow + K > len(self.X))
-                if xbad or wb + row * K + K > bw or (pb + row) * PARAM_BYTES + PARAM_BYTES > bp or ys + cnt * ob > osize:
+                if xbad or wb + row * rb + rb > bw or (pb + row) * PARAM_BYTES + PARAM_BYTES > bp or ys + cnt * ob > osize:
                     bad = True
                 ys += cnt * ob
                 o += cnt
@@ -569,7 +579,7 @@ class SimBus:
         for o in range(N):
             # Bank and local row of channel o.
             b, r = o % L, o // L
-            w += self.W[b * bw + wb + r * K: b * bw + wb + (r + 1) * K]
+            w += self.W[b * bw + wb + r * rb: b * bw + wb + (r + 1) * rb]
             p += self.P[b * bp + (pb + r) * PARAM_BYTES: b * bp + (pb + r + 1) * PARAM_BYTES]
         # Window mode: build the input vectors the way the generator walks them; padding adds nothing.
         if winm:
@@ -577,7 +587,7 @@ class SimBus:
         else:
             xin = to_i8_list(self.X[xbase:])
         # Compute with the shared kernel (the input vectors start at xbase).
-        y = dot_requant(xin, to_i8_list(w), p, K, N, nvec, xs, ioff, zp, amin, amax, dw=dw, raw=bool(mode & MODE_RAW))
+        y = dot_requant(xin, unpack_w4(w, K, N) if w4 else to_i8_list(w), p, K, N, nvec, xs, ioff, zp, amin, amax, dw=dw, raw=bool(mode & MODE_RAW))
         # Store results at ybase (in Y, or in X when fused).
         mem = self.X if outx else self.Y
         if mode & MODE_RAW:

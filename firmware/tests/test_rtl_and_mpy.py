@@ -22,12 +22,12 @@ def _run(cmd, env=None, timeout=1800):
 
 
 # Environment selecting the engine build for run_sim.sh.
-def _env(lanes, rq, queue=0, perf=0, win=0, fuse=0):
+def _env(lanes, rq, queue=0, perf=0, win=0, fuse=0, w4=0):
     # Inherit the rest.
     e = dict(os.environ)
     # Build options.
     e["LANES"], e["RQ_MODE"], e["QUEUE"], e["PERF"] = str(lanes), str(rq), str(queue), str(perf)
-    e["WIN"], e["FUSE"] = str(win), str(fuse)
+    e["WIN"], e["FUSE"], e["W4"] = str(win), str(fuse), str(w4)
     return e
 
 
@@ -42,28 +42,30 @@ def test_tb_requant():
 
 # Engine unit testbench against the Python register model, for several builds (lanes, requantiser).
 @pytest.mark.skipif(not shutil.which("iverilog"), reason="Icarus Verilog not installed")
-@pytest.mark.parametrize("lanes,rq,queue,perf,win,fuse", [(1, 0, 0, 0, 0, 0), (1, 1, 0, 0, 1, 0), (2, 0, 1, 0, 0, 1), (4, 1, 1, 1, 1, 1),
-                                                           (8, 1, 0, 1, 1, 0), (2, 1, 1, 0, 1, 1)])
-def test_tb_engine(lanes, rq, queue, perf, win, fuse):
+@pytest.mark.parametrize("lanes,rq,queue,perf,win,fuse,w4", [(1, 0, 0, 0, 0, 0, 0), (1, 1, 0, 0, 1, 0, 0), (2, 0, 1, 0, 0, 1, 0),
+                                                              (4, 1, 1, 1, 1, 1, 1), (8, 1, 0, 1, 1, 0, 1), (2, 1, 1, 0, 1, 1, 0),
+                                                              (1, 0, 0, 0, 0, 0, 1)])
+def test_tb_engine(lanes, rq, queue, perf, win, fuse, w4):
     # Fresh random vectors.
-    _run([sys.executable, "gen_engine_vectors.py", "7", "60", str(lanes), str(rq), str(queue), str(perf), str(win), str(fuse)])
+    _run([sys.executable, "gen_engine_vectors.py", "7", "60", str(lanes), str(rq), str(queue), str(perf), str(win), str(fuse), str(w4)])
     # Compile and run.
-    out = _run(["bash", "run_sim.sh", "engine"], _env(lanes, rq, queue, perf, win, fuse))
+    out = _run(["bash", "run_sim.sh", "engine"], _env(lanes, rq, queue, perf, win, fuse, w4))
     # Verdict line.
     assert "PASS tb_engine" in out, out[-2000:]
 
 
 # Whole-model inference through the UART bridge into the engine.
 @pytest.mark.skipif(not shutil.which("iverilog"), reason="Icarus Verilog not installed")
-@pytest.mark.parametrize("name,lanes,rq,queue,win,fuse", [("m_cnn", 1, 0, 0, 0, 0), ("m_avg", 1, 0, 0, 0, 0), ("m_cnn", 4, 1, 0, 0, 0),
-                                                           ("m_cnn", 2, 1, 1, 1, 1), ("m_avg", 1, 0, 1, 1, 1)])
-def test_tb_system(name, lanes, rq, queue, win, fuse):
+@pytest.mark.parametrize("name,lanes,rq,queue,win,fuse,w4", [("m_cnn", 1, 0, 0, 0, 0, 0), ("m_avg", 1, 0, 0, 0, 0, 0), ("m_cnn", 4, 1, 0, 0, 0, 0),
+                                                             ("m_cnn", 2, 1, 1, 1, 1, 0), ("m_avg", 1, 0, 1, 1, 1, 0),
+                                                             ("m_cnn", 2, 1, 1, 1, 1, 1), ("m_avg", 1, 0, 0, 0, 0, 1)])
+def test_tb_system(name, lanes, rq, queue, win, fuse, w4):
     # Pytest needs the tflite schema to record the inference.
     pytest.importorskip("tflite")
     # Record the inference.
-    _run([sys.executable, "gen_system_vectors.py", model_path(name), "2", str(lanes), str(rq), str(queue), "0", str(win), str(fuse)])
+    _run([sys.executable, "gen_system_vectors.py", model_path(name), "2", str(lanes), str(rq), str(queue), "0", str(win), str(fuse), str(w4), str(w4)])
     # Replay through the UART top.
-    out = _run(["bash", "run_sim.sh", "uart"], _env(lanes, rq, queue, 0, win, fuse))
+    out = _run(["bash", "run_sim.sh", "uart"], _env(lanes, rq, queue, 0, win, fuse, w4))
     # Verdict.
     assert "PASS tb_uart_top" in out, out[-2000:]
 

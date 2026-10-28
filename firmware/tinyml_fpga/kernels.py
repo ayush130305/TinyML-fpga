@@ -112,6 +112,28 @@ def s8(b):
 _S8 = [i - 256 if i > 127 else i for i in range(256)]
 
 
+# Weight bytes per output channel row: K bytes for int8 weights, ceil(K / 2) for packed 4-bit weights.
+def row_bytes(K, w4):
+    return (K + 1) // 2 if w4 else K
+
+
+# Unpack N rows of K signed 4-bit weights (two per byte, low nibble = even index, rows start on a byte) to int8 values.
+def unpack_w4(buf, K, N):
+    # Bytes per row.
+    rb = (K + 1) // 2
+    # Output list.
+    out = []
+    for o in range(N):
+        # Row start.
+        b0 = o * rb
+        for k in range(K):
+            # Nibble k of the row.
+            v = (buf[b0 + (k >> 1)] >> ((k & 1) * 4)) & 0xF
+            # Sign extend.
+            out.append(v - 16 if v > 7 else v)
+    return out
+
+
 # Convert a bytes-like object of int8 data to a list of Python ints.
 def to_i8_list(buf):
     # Table lookup per byte.

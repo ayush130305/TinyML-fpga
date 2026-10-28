@@ -38,10 +38,28 @@ def cmd_convert(a):
     convert_file(a.model, dst)
     # Size report.
     print("wrote %s (%d bytes)" % (dst, os.path.getsize(dst)))
-    # Verify unless told not to.
+    # Verify unless told not to (always the int8 conversion, which is bit-exact with LiteRT).
     if not a.no_check:
         a.n = 20
         cmd_check(a)
+    # Optional 4-bit weights for the engine builds with HAS_W4.
+    if a.int4:
+        from .transform import to_int4, compare
+        sel = a.int4 if a.int4 in ("all", "auto") else [int(v) for v in a.int4.split(",")]
+        with open(dst, "rb") as f:
+            t8 = f.read()
+        t4, rep = to_int4(t8, sel)
+        with open(dst, "wb") as f:
+            f.write(t4)
+        print("wrote %s with 4-bit weights (%d bytes, %d layers):" % (dst, len(t4), len(rep)))
+        for r in rep:
+            print("  op %d %-4s K=%-5d N=%-4d weight error %.1f%% of RMS, %d weight bytes saved" % (
+                r["op"], r["kind"], r["K"], r["N"], 100 * r["rel_rms_error"], r["bytes_saved"]))
+        # How far do the outputs move? (random inputs unless --samples gives real ones)
+        xs = [bytearray(int(v) & 0xFF for v in s.reshape(-1)) for s in _random_samples(a.model, 20)]
+        c = compare(t8, t4, xs)
+        print("  vs int8 on %d random inputs: mean |diff| %.4f, max |diff| %.4f, same top-1 %.0f%%  (random inputs are a harsh "
+              "test; check with real data before deploying)" % (len(xs), c["mean_abs"], c["max_abs"], 100 * c["same_top1"]))
 
 
 # Summary on an engine with the given RAM sizes.
@@ -92,6 +110,8 @@ def main():
     c = sub.add_parser("convert", help=".tflite -> .tmf, then check against LiteRT")
     c.add_argument("model"); c.add_argument("output", nargs="?")
     c.add_argument("--no-check", action="store_true")
+    c.add_argument("--int4", metavar="LAYERS", help="4-bit weights for engine builds with HAS_W4: auto (all but first and last "
+                   "layer), all, or weight-layer numbers like 1,2")
     c.set_defaults(fn=cmd_convert)
     # info.
     i = sub.add_parser("info", help="ops, sizes and placement on an engine build")

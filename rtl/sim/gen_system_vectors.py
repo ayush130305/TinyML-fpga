@@ -6,7 +6,7 @@
 #   11_AAAA_LL  read frame of LL+1 bytes at AAAA, followed by LL+1 words with the expected bytes
 #   12_000000   poll STATUS (0x120) until done, expect no error
 #   FF_000000   end
-# usage: python3 gen_system_vectors.py [model.tflite] [inferences] [lanes] [rq_mode] [queue] [perf] [win] [fuse]
+# usage: python3 gen_system_vectors.py [model.tflite] [inferences] [lanes] [rq_mode] [queue] [perf] [win] [fuse] [w4] [int4]
 
 import os
 import sys
@@ -25,7 +25,10 @@ AW = dict(w_aw=12, x_aw=10, y_aw=8, p_aw=10, lanes=int(sys.argv[3]) if len(sys.a
           rq_mode=int(sys.argv[4]) if len(sys.argv) > 4 else 0, queue=bool(int(sys.argv[5])) if len(sys.argv) > 5 else False,
           perf=bool(int(sys.argv[6])) if len(sys.argv) > 6 else False,
           win=bool(int(sys.argv[7])) if len(sys.argv) > 7 else False,
-          fuse=bool(int(sys.argv[8])) if len(sys.argv) > 8 else False)
+          fuse=bool(int(sys.argv[8])) if len(sys.argv) > 8 else False,
+          w4=bool(int(sys.argv[9])) if len(sys.argv) > 9 else False)
+# Re-quantise the model's weights to 4 bits (needs a w4 engine build).
+INT4 = bool(int(sys.argv[10])) if len(sys.argv) > 10 else False
 # Model and inference count.
 MODEL = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "tests", "models", "m_cnn.tflite")
 RUNS = int(sys.argv[2]) if len(sys.argv) > 2 else 2
@@ -80,7 +83,11 @@ class RecordingBus:
 rec = RecordingBus(SimBus(**AW))
 # Runtime on the "hardware" engine.
 with open(MODEL, "rb") as f:
-    model = Model(convert_bytes(f.read()), HwEngine(rec))
+    tmf = convert_bytes(f.read())
+if INT4:
+    from tinyml_fpga.transform import to_int4
+    tmf = to_int4(tmf, "all")[0]
+model = Model(tmf, HwEngine(rec))
 # Sample inputs.
 d = np.load(os.path.join(ROOT, "tests", "models", "digits_samples.npz"))
 ti = model.input

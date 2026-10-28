@@ -19,7 +19,8 @@ module tinyml_uart_top #(
     parameter D_AW    = 9,              // descriptor RAM address width (64 B per descriptor)
     parameter HAS_PERF = 0,             // performance counters
     parameter HAS_WIN  = 0,             // input window generator (no host-side im2col)
-    parameter HAS_FUSE = 0              // layer outputs can be written back into X
+    parameter HAS_FUSE = 0,             // layer outputs can be written back into X
+    parameter HAS_W4   = 0              // 4-bit weights
 ) (
     input  wire       clk,              // board clock
     input  wire       rst,              // reset, active high (e.g. a push button)
@@ -66,7 +67,7 @@ module tinyml_uart_top #(
 
     // This contains the instantiation for the int8 engine
     tmf_engine #(.W_AW(W_AW), .X_AW(X_AW), .Y_AW(Y_AW), .P_AW(P_AW), .LANES(LANES), .RQ_MODE(RQ_MODE),
-                .HAS_QUEUE(HAS_QUEUE), .D_AW(D_AW), .HAS_PERF(HAS_PERF), .HAS_WIN(HAS_WIN), .HAS_FUSE(HAS_FUSE)) u_engine (
+                .HAS_QUEUE(HAS_QUEUE), .D_AW(D_AW), .HAS_PERF(HAS_PERF), .HAS_WIN(HAS_WIN), .HAS_FUSE(HAS_FUSE), .HAS_W4(HAS_W4)) u_engine (
         .clk(clk), .rst(rst_i),
         .bus_addr(addr), .bus_wr(wr), .bus_wdata(wdata), .bus_rd(rd), .bus_rdata(rdata),
         .status_o(st));

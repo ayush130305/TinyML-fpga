@@ -21,6 +21,7 @@
 // With HAS_QUEUE a list of job descriptors (the same bytes as the config block, 64 B per slot) can be written
 // to D and run back to back with one CTRL = 0x02, which saves the host a configure / start / poll round trip
 // per job. HAS_PERF adds counters for MAC clocks, stall clocks, output bytes and finished jobs.
+// HAS_W4 stores weights as signed 4-bit values, two per W byte (low nibble = even index), halving weight RAM.
 // HAS_WIN adds an input-window generator: with MODE bit 2 the engine walks the (padded, strided, dilated)
 // convolution window of every output pixel straight out of an NHWC image in X, so the host no longer builds
 // im2col patches. HAS_FUSE lets a job write its outputs into X (MODE bit 3) instead of Y, so the next layer of
@@ -40,7 +41,8 @@ module tmf_engine #(
     parameter D_AW    = 9,               // descriptor RAM address width (64 B per descriptor, max 12)
     parameter HAS_PERF = 0,              // performance counters at 0x160
     parameter HAS_WIN  = 0,              // input window generator (MODE bit 2)
-    parameter HAS_FUSE = 0               // outputs can be written into X (MODE bit 3)
+    parameter HAS_FUSE = 0,              // outputs can be written into X (MODE bit 3)
+    parameter HAS_W4   = 0               // 4-bit weights, two per byte (MODE bit 4)
 ) (
     input  wire        clk,              // clock
     input  wire        rst,              // synchronous reset, active high
@@ -70,7 +72,7 @@ module tmf_engine #(
     // LANES as a 4-bit constant.
     localparam [3:0] LANES4 = LANES;
     // Feature bits reported in the ID block.
-    localparam [7:0] FEATURES = {1'b0, (HAS_PERF != 0), 2'd0, (HAS_FUSE != 0), (HAS_WIN != 0), (HAS_QUEUE != 0), (RQ_MODE == 1)};
+    localparam [7:0] FEATURES = {1'b0, (HAS_PERF != 0), 1'b0, (HAS_W4 != 0), (HAS_FUSE != 0), (HAS_WIN != 0), (HAS_QUEUE != 0), (RQ_MODE == 1)};
     // Descriptor RAM size in bytes.
     localparam [32:0] DSIZE = 33'd1 << D_AW;
     // Configuration bytes held in a descriptor.
@@ -144,6 +146,8 @@ module tmf_engine #(
     wire cRAW = cfg[17][1];
     // Window mode bit (HAS_WIN).
     wire cWIN  = (HAS_WIN != 0) && cfg[17][2];
+    // 4-bit weights: each W byte holds two, low nibble first (HAS_W4).
+    wire cW4   = (HAS_W4 != 0) && cfg[17][4];
     // Write the outputs into X (HAS_FUSE).
     wire cOUTX = (HAS_FUSE != 0) && cfg[17][3];
     // Input base offset in X.
@@ -261,6 +265,8 @@ module tmf_engine #(
     // ---------------------------------------------------------------- group geometry
     // Dot length, zero-extended to the pointer width.
     wire [32:0] k33  = {17'd0, cK};
+    // Weight bytes per output channel row: K, or ceil(K / 2) for 4-bit weights.
+    wire [32:0] kb33 = cW4 ? ((k33 + 33'd1) >> 1) : k33;
     // Vector stride, zero-extended to the pointer width.
     wire [32:0] xs33 = {17'd0, cXSTRIDE};
     // Channels left in this vector.
@@ -276,7 +282,7 @@ module tmf_engine #(
     // The output goes to X or to Y.
     wire        y_ok = (ys + gob <= (cOUTX ? XSIZE : YSIZE));
     // The next group fits in every memory.
-    wire        fits = x_ok && (wrow + k33 <= BWSIZE) && (pp + 33'd16 <= BPSIZE) && y_ok;
+    wire        fits = x_ok && (wrow + kb33 <= BWSIZE) && (pp + 33'd16 <= BPSIZE) && y_ok;
     // Last group of a vector.
     wire        last_o = ({1'b0, oi} + {13'd0, cnt} >= {1'b0, cN});
     // Last vector of the job.
@@ -322,6 +328,9 @@ module tmf_engine #(
     tmf_ram #(.AW(Y_AW)) u_y (.clk(clk), .we(y_we & ~cOUTX), .waddr(y_wa12[Y_AW-1:0]), .wdata(y_wd),
                                .raddr(bus_addr[Y_AW-1:0]), .q(y_q));
 
+    // Which nibble of the weight byte the lanes get (registered with the RAM read).
+    reg nsel;
+    always @(posedge clk) nsel <= ki[0];
     // Tap outside the image (only in window mode).
     wire pad_now = cWIN && (iy < 16'sd0 || iy >= cH || ix < 16'sd0 || ix >= cWW);
     // Register it with the RAM read.
@@ -352,9 +361,12 @@ module tmf_engine #(
                                     .wdata(bus_wdata),
                                     .raddr(busy ? p_ra[PA-1:0] : bus_addr[PA-1:0]),
                                     .q(p_q[8*gl +: 8]));
+            // The weight the MAC multiplies: the whole byte, or one sign-extended nibble.
+            wire [3:0] wnib = nsel ? w_q[8*gl+4 +: 4] : w_q[8*gl +: 4];
+            wire [7:0] wsel = cW4 ? {{4{wnib[3]}}, wnib} : w_q[8*gl +: 8];
             // This contains the instantiation for this lane's MAC
             tmf_lane u_lane (.clk(clk), .par_en(par_en), .p_byte(p_q[8*gl +: 8]), .acc_init(acc_init), .v1(v1), .v2(v2),
-                             .xoff(xoff), .w_byte(w_q[8*gl +: 8]), .acc_o(acc_w[32*gl +: 32]),
+                             .xoff(xoff), .w_byte(wsel), .acc_o(acc_w[32*gl +: 32]),
                              .mult_o(mult_w[32*gl +: 32]), .shift_o(shift_w[8*gl +: 8]));
         end
     endgenerate
@@ -782,8 +794,8 @@ module tmf_engine #(
                         xks <= xrs + cKYS;
                         xp  <= {17'd0, xrs + cKYS};
                     end
-                    // Next W byte.
-                    wp <= wp + 33'd1;
+                    // Next W byte (4-bit weights: every second clock).
+                    wp <= wp + (cW4 ? {32'd0, ki[0]} : 33'd1);
                     // Count the issue.
                     ki <= ki + 16'd1;
                     // Last issue: wait for the pipeline.
@@ -856,7 +868,7 @@ module tmf_engine #(
                         // Local row advances after the last lane of a bank row (always for non-depthwise groups).
                         if (!cDW || ((oi[2:0] & (LANES - 1)) == (LANES - 1))) begin
                             // Next weight row.
-                            wrow <= wrow + k33;
+                            wrow <= wrow + kb33;
                             // Next parameter record.
                             pp   <= pp + 33'd16;
                         end

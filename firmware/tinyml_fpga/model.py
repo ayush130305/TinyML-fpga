@@ -7,7 +7,7 @@ import json
 import struct
 
 from . import kernels as kn
-from .engine import CpuEngine, MODE_DW, MODE_WIN, MODE_OUTX, window_block
+from .engine import CpuEngine, MODE_DW, MODE_WIN, MODE_OUTX, MODE_W4, window_block
 
 # File magic.
 MAGIC = b"TMF1"
@@ -120,11 +120,14 @@ class Model:
         L = e.lanes
         # Engine ops.
         eops = [op for op in self.ops if op["op"] in ENGINE_OPS]
-        # Rows per bank of a layer: ceil(N / lanes).
+        # Rows per bank of a layer: ceil(N / lanes). Weight bytes per row: K, or ceil(K / 2) for 4-bit weights.
         for op in eops:
             op["_rows"] = (op["N"] + L - 1) // L
+            w4 = op.get("wbits", 8) == 4
+            op["_rb"] = kn.row_bytes(op["K"], w4)
+            op["_wm"] = MODE_W4 if w4 else 0
         # Total weight bytes and parameter records per bank.
-        tw = sum(op["_rows"] * op["K"] for op in eops)
+        tw = sum(op["_rows"] * op["_rb"] for op in eops)
         tp = sum(op["_rows"] for op in eops)
         # Everything fits: weights stay resident on the engine for every inference.
         self.resident = tw <= e.w_cap and tp <= e.p_cap
@@ -137,14 +140,14 @@ class Model:
                 # Weight and parameter offsets.
                 op["_wb"], op["_pb"] = wo, po
                 # Upload once.
-                e.upload_w(wo, self._blob(op["w"]), op["K"])
+                e.upload_w(wo, self._blob(op["w"]), op["_rb"])
                 e.upload_p(po, self._blob(op["p"]))
                 # Advance.
-                wo += op["_rows"] * op["K"]
+                wo += op["_rows"] * op["_rb"]
                 po += op["_rows"]
             # Channels per job: weights, parameters and one vector's outputs must fit, and for depthwise
             # one vector holds K bytes per channel, so X limits the chunk too.
-            c = min(op["N"], L * (e.w_cap // op["K"]), L * e.p_cap, e.y_cap)
+            c = min(op["N"], L * (e.w_cap // op["_rb"]), L * e.p_cap, e.y_cap)
             # Depthwise: K * chunk bytes per vector in X.
             if op["op"] == "dw":
                 c = min(c, e.x_cap // op["K"])
@@ -154,6 +157,9 @@ class Model:
             # Chunks that do not cover the whole layer must start on a lane boundary.
             if c < op["N"]:
                 c -= c % L
+            # An engine without 4-bit weights cannot run a 4-bit layer: software.
+            if op["_wm"] and not getattr(e, "has_w4", False):
+                c = 0
             # 0 means "never fits": this layer runs in software.
             op["_chunk"] = c
             # Window mode (the engine walks the convolution windows itself): channel chunk limited by one output row.
@@ -161,7 +167,7 @@ class Model:
             if getattr(e, "has_win", False) and op["op"] in ("conv", "dw"):
                 # The image must fit X and one row of outputs of the chunk must fit Y.
                 img = op["H"] * op["W"] * op["C"]
-                cw = min(op["N"], L * (e.w_cap // op["K"]), L * e.p_cap, e.y_cap // op["OW"])
+                cw = min(op["N"], L * (e.w_cap // op["_rb"]), L * e.p_cap, e.y_cap // op["OW"])
                 # Chunks that do not cover the whole layer must start on a lane boundary.
                 if cw < op["N"]:
                     cw -= cw % L
@@ -169,7 +175,7 @@ class Model:
                 if op["op"] == "dw" and cw < op["N"]:
                     cw = 0
                 # Descriptor fields must hold the geometry.
-                if img <= e.x_cap and cw > 0 and self._win(op, 0, 0) is not None:
+                if img <= e.x_cap and cw > 0 and self._win(op, 0, 0) is not None and (not op["_wm"] or getattr(e, "has_w4", False)):
                     op["_wchunk"] = cw
 
     # Input tensor description.
@@ -337,7 +343,7 @@ class Model:
     # Weight and parameter offsets of the channel chunk n0..n0+nc of an op on engine eng (uploads when streaming).
     def _place(self, op, eng, n0, nc):
         # Engine and sizes.
-        e, K = self.engine, op["K"]
+        e, K = self.engine, op["_rb"]
         # Already resident (n0 is a multiple of the lane count, so its rows start n0 // lanes into the layer).
         if eng is e and self.resident:
             return op["_wb"] + (n0 // e.lanes) * K, op["_pb"] + n0 // e.lanes
@@ -379,7 +385,7 @@ class Model:
                 # Rows r0 .. r1-1.
                 r1 = min(r0 + rb, OH)
                 # Run the job (the image is already in X).
-                r = e.run(K, nc, (r1 - r0) * OW, 0, wb, pb, in_off, zp, amin, amax, MODE_WIN | (MODE_DW if dw else 0),
+                r = e.run(K, nc, (r1 - r0) * OW, 0, wb, pb, in_off, zp, amin, amax, MODE_WIN | op["_wm"] | (MODE_DW if dw else 0),
                           None, 0, 0, self._win(op, r0, 0))
                 # Scatter into NHWC order.
                 j = 0
@@ -477,13 +483,13 @@ class Model:
             mode = (0 if last else MODE_OUTX)
             if op["op"] == "fc":
                 job = [op["K"], op["N"], 1, op["K"], op["_wb"], op["_pb"], -ti["zp"], to["zp"], op["act"][0], op["act"][1],
-                       mode, xin, yout]
+                       mode | op["_wm"], xin, yout]
             else:
                 win = self._win(op, 0, xin)
                 if win is None:
                     return None
                 job = [op["K"], op["N"], op["OH"] * op["OW"], 0, op["_wb"], op["_pb"], -ti["zp"], to["zp"], op["act"][0],
-                       op["act"][1], mode | MODE_WIN | (MODE_DW if op["op"] == "dw" else 0), xin, yout, win]
+                       op["act"][1], mode | op["_wm"] | MODE_WIN | (MODE_DW if op["op"] == "dw" else 0), xin, yout, win]
             jobs.append(tuple(job))
         return {"end": mem[-1], "jobs": jobs, "ops": mem, "out": sizes[-1][1]}
 
@@ -520,7 +526,7 @@ class Model:
         cs = op["_chunk"] or N
         # Software fallback needs its own copy of the weights.
         if not op["_chunk"]:
-            eng.upload_w(0, self._blob(op["w"]), K)
+            eng.upload_w(0, self._blob(op["w"]), op["_rb"])
             eng.upload_p(0, self._blob(op["p"]))
         # Each channel chunk.
         for n0 in range(0, N, cs):
@@ -543,7 +549,7 @@ class Model:
                     # Whole vector, or this chunk's slice for depthwise.
                     xb += vec(i)[n0 * K:n1 * K] if dw else vec(i)
                 # Run the job.
-                r = eng.run(K, nc, v1 - v0, xs, wb, pb, in_off, zp, amin, amax, MODE_DW if dw else 0, xb)
+                r = eng.run(K, nc, v1 - v0, xs, wb, pb, in_off, zp, amin, amax, (MODE_DW if dw else 0) | op["_wm"], xb)
                 # Scatter into NHWC order.
                 j = 0
                 for i in range(v0, v1):
@@ -568,8 +574,9 @@ class Model:
             sh = self.tensors[op["out"]]["shape"]
             # Engine ops show their GEMV size.
             if op["op"] in ENGINE_OPS:
-                info = "K=%d N=%d  MACs=%d  %s" % (op["K"], op["N"], op["K"] * op["N"] * (op.get("nvec") or op["OH"] * op["OW"]),
-                                                  "engine" if op["_chunk"] else "cpu (too big for engine)")
+                info = "K=%d N=%d  MACs=%d  %s%s" % (op["K"], op["N"], op["K"] * op["N"] * (op.get("nvec") or op["OH"] * op["OW"]),
+                                                    "engine" if (op["_chunk"] or op.get("_wchunk")) else "cpu (too big for engine)",
+                                                    "  int4" if op["_wm"] else "")
             else:
                 info = "cpu"
             # One line.

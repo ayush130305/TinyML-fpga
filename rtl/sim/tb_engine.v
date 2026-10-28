@@ -12,7 +12,8 @@ module tb_engine #(
     parameter HAS_QUEUE = 0,             // descriptor queue under test (must match gen_engine_vectors.py)
     parameter HAS_PERF = 0,              // performance counters under test (must match gen_engine_vectors.py)
     parameter HAS_WIN = 0,               // window generator under test (must match gen_engine_vectors.py)
-    parameter HAS_FUSE = 0               // write-back to X under test (must match gen_engine_vectors.py)
+    parameter HAS_FUSE = 0,              // write-back to X under test (must match gen_engine_vectors.py)
+    parameter HAS_W4 = 0                 // 4-bit weights under test (must match gen_engine_vectors.py)
 );
 
     // Clock.
@@ -53,7 +54,7 @@ module tb_engine #(
     always #20 clk = ~clk;
 
     // This contains the instantiation for the device under test
-    tmf_engine #(.W_AW(10), .X_AW(9), .Y_AW(8), .P_AW(8), .LANES(LANES), .RQ_MODE(RQ_MODE), .HAS_QUEUE(HAS_QUEUE), .D_AW(9), .HAS_PERF(HAS_PERF), .HAS_WIN(HAS_WIN), .HAS_FUSE(HAS_FUSE)) dut (
+    tmf_engine #(.W_AW(10), .X_AW(9), .Y_AW(8), .P_AW(8), .LANES(LANES), .RQ_MODE(RQ_MODE), .HAS_QUEUE(HAS_QUEUE), .D_AW(9), .HAS_PERF(HAS_PERF), .HAS_WIN(HAS_WIN), .HAS_FUSE(HAS_FUSE), .HAS_W4(HAS_W4)) dut (
         .clk(clk), .rst(rst), .bus_addr(addr), .bus_wr(wr), .bus_wdata(wdata), .bus_rd(rd),
         .bus_rdata(rdata), .status_o(status));
 
@@ -187,8 +188,8 @@ module tb_engine #(
             pc = pc + 1;
         end
         // Verdict.
-        if (errors == 0) $display("PASS tb_engine (lanes %0d, rq_mode %0d, queue %0d, perf %0d, win %0d, fuse %0d): %0d jobs, %0d checks", LANES, RQ_MODE, HAS_QUEUE, HAS_PERF, HAS_WIN, HAS_FUSE, jobs, checks);
-        else             $display("FAIL tb_engine (lanes %0d, rq_mode %0d, queue %0d, perf %0d, win %0d, fuse %0d): %0d errors in %0d checks", LANES, RQ_MODE, HAS_QUEUE, HAS_PERF, HAS_WIN, HAS_FUSE, errors, checks);
+        if (errors == 0) $display("PASS tb_engine (lanes %0d, rq_mode %0d, queue %0d, perf %0d, win %0d, fuse %0d, w4 %0d): %0d jobs, %0d checks", LANES, RQ_MODE, HAS_QUEUE, HAS_PERF, HAS_WIN, HAS_FUSE, HAS_W4, jobs, checks);
+        else             $display("FAIL tb_engine (lanes %0d, rq_mode %0d, queue %0d, perf %0d, win %0d, fuse %0d, w4 %0d): %0d errors in %0d checks", LANES, RQ_MODE, HAS_QUEUE, HAS_PERF, HAS_WIN, HAS_FUSE, HAS_W4, errors, checks);
         $finish;
     end
 
