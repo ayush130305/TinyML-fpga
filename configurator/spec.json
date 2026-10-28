@@ -1,0 +1,824 @@
+{
+ "base": {
+  "1,0": {
+   "dsp": 1,
+   "ff": 1058,
+   "lut4": 2062,
+   "lut4_nodsp": 2237,
+   "ram4k": 13
+  },
+  "1,1": {
+   "dsp": 5,
+   "ff": 1827,
+   "lut4": 2559,
+   "lut4_nodsp": 5378,
+   "ram4k": 13
+  },
+  "2,0": {
+   "dsp": 2,
+   "ff": 1252,
+   "lut4": 2264,
+   "lut4_nodsp": 2614,
+   "ram4k": 13
+  },
+  "2,1": {
+   "dsp": 6,
+   "ff": 2021,
+   "lut4": 2654,
+   "lut4_nodsp": 5648,
+   "ram4k": 13
+  },
+  "4,0": {
+   "dsp": 4,
+   "ff": 1643,
+   "lut4": 2645,
+   "lut4_nodsp": 3345,
+   "ram4k": 15
+  },
+  "4,1": {
+   "dsp": 8,
+   "ff": 2412,
+   "lut4": 3044,
+   "lut4_nodsp": 6388,
+   "ram4k": 15
+  },
+  "8,0": {
+   "dsp": 8,
+   "ff": 2427,
+   "lut4": 3396,
+   "lut4_nodsp": 4796,
+   "ram4k": 19
+  },
+  "8,1": {
+   "dsp": 12,
+   "ff": 3196,
+   "lut4": 3816,
+   "lut4_nodsp": 7860,
+   "ram4k": 19
+  }
+ },
+ "budgets": [
+  4000,
+  8000
+ ],
+ "buses": {
+  "axil": {
+   "cost": {
+    "dsp": 0,
+    "ff": 122,
+    "lut4": 124,
+    "lut4_nodsp": 124,
+    "ram4k": 0
+   },
+   "files": [
+    "axil_bus.v"
+   ],
+   "label": "AXI4-Lite slave",
+   "top": "tinyml_axil_top.v"
+  },
+  "i2c": {
+   "cost": {
+    "dsp": 0,
+    "ff": 71,
+    "lut4": 106,
+    "lut4_nodsp": 106,
+    "ram4k": 0
+   },
+   "files": [
+    "i2c_bus.v"
+   ],
+   "label": "I2C slave",
+   "top": "tinyml_i2c_top.v"
+  },
+  "spi": {
+   "cost": {
+    "dsp": 0,
+    "ff": 80,
+    "lut4": 88,
+    "lut4_nodsp": 88,
+    "ram4k": 0
+   },
+   "files": [
+    "spi_bus.v"
+   ],
+   "label": "SPI slave",
+   "top": "tinyml_spi_top.v"
+  },
+  "uart": {
+   "cost": {
+    "dsp": 0,
+    "ff": 134,
+    "lut4": 187,
+    "lut4_nodsp": 187,
+    "ram4k": 0
+   },
+   "files": [
+    "uart_bus.v",
+    "uart_rx.v",
+    "uart_tx.v"
+   ],
+   "label": "UART",
+   "top": "tinyml_uart_top.v"
+  }
+ },
+ "core": [
+  "tmf_engine.v",
+  "tmf_lane.v",
+  "tmf_ram.v",
+  "tmf_rq.v"
+ ],
+ "delta": {
+  "1": {
+   "HAS_CB": {
+    "dsp": 0,
+    "ff": 130,
+    "lut4": 312,
+    "lut4_nodsp": 312,
+    "ram4k": 0
+   },
+   "HAS_FUSE": {
+    "dsp": 0,
+    "ff": 30,
+    "lut4": 28,
+    "lut4_nodsp": 28,
+    "ram4k": 0
+   },
+   "HAS_PERF": {
+    "dsp": 0,
+    "ff": 128,
+    "lut4": 236,
+    "lut4_nodsp": 236,
+    "ram4k": 0
+   },
+   "HAS_QUEUE": {
+    "dsp": 0,
+    "ff": 19,
+    "lut4": 128,
+    "lut4_nodsp": 128,
+    "ram4k": 1
+   },
+   "HAS_W4": {
+    "dsp": 0,
+    "ff": 1,
+    "lut4": 39,
+    "lut4_nodsp": 39,
+    "ram4k": 0
+   },
+   "HAS_WIN": {
+    "dsp": 0,
+    "ff": 419,
+    "lut4": 852,
+    "lut4_nodsp": 852,
+    "ram4k": 0
+   }
+  },
+  "2": {
+   "HAS_CB": {
+    "dsp": 0,
+    "ff": 130,
+    "lut4": 491,
+    "lut4_nodsp": 491,
+    "ram4k": 0
+   },
+   "HAS_FUSE": {
+    "dsp": 0,
+    "ff": 30,
+    "lut4": 23,
+    "lut4_nodsp": 23,
+    "ram4k": 0
+   },
+   "HAS_PERF": {
+    "dsp": 0,
+    "ff": 128,
+    "lut4": 245,
+    "lut4_nodsp": 245,
+    "ram4k": 0
+   },
+   "HAS_QUEUE": {
+    "dsp": 0,
+    "ff": 19,
+    "lut4": 130,
+    "lut4_nodsp": 130,
+    "ram4k": 1
+   },
+   "HAS_W4": {
+    "dsp": 0,
+    "ff": 1,
+    "lut4": 53,
+    "lut4_nodsp": 53,
+    "ram4k": 0
+   },
+   "HAS_WIN": {
+    "dsp": 0,
+    "ff": 419,
+    "lut4": 845,
+    "lut4_nodsp": 845,
+    "ram4k": 0
+   }
+  },
+  "4": {
+   "HAS_CB": {
+    "dsp": 0,
+    "ff": 130,
+    "lut4": 820,
+    "lut4_nodsp": 820,
+    "ram4k": 0
+   },
+   "HAS_FUSE": {
+    "dsp": 0,
+    "ff": 30,
+    "lut4": 4,
+    "lut4_nodsp": 4,
+    "ram4k": 0
+   },
+   "HAS_PERF": {
+    "dsp": 0,
+    "ff": 128,
+    "lut4": 253,
+    "lut4_nodsp": 253,
+    "ram4k": 0
+   },
+   "HAS_QUEUE": {
+    "dsp": 0,
+    "ff": 19,
+    "lut4": 117,
+    "lut4_nodsp": 117,
+    "ram4k": 1
+   },
+   "HAS_W4": {
+    "dsp": 0,
+    "ff": 1,
+    "lut4": 51,
+    "lut4_nodsp": 51,
+    "ram4k": 0
+   },
+   "HAS_WIN": {
+    "dsp": 0,
+    "ff": 419,
+    "lut4": 823,
+    "lut4_nodsp": 823,
+    "ram4k": 0
+   }
+  },
+  "8": {
+   "HAS_CB": {
+    "dsp": 0,
+    "ff": 130,
+    "lut4": 1464,
+    "lut4_nodsp": 1464,
+    "ram4k": 0
+   },
+   "HAS_FUSE": {
+    "dsp": 0,
+    "ff": 29,
+    "lut4": 36,
+    "lut4_nodsp": 36,
+    "ram4k": 0
+   },
+   "HAS_PERF": {
+    "dsp": 0,
+    "ff": 128,
+    "lut4": 250,
+    "lut4_nodsp": 250,
+    "ram4k": 0
+   },
+   "HAS_QUEUE": {
+    "dsp": 0,
+    "ff": 19,
+    "lut4": 139,
+    "lut4_nodsp": 139,
+    "ram4k": 1
+   },
+   "HAS_W4": {
+    "dsp": 0,
+    "ff": 1,
+    "lut4": 122,
+    "lut4_nodsp": 122,
+    "ram4k": 0
+   },
+   "HAS_WIN": {
+    "dsp": 0,
+    "ff": 419,
+    "lut4": 859,
+    "lut4_nodsp": 859,
+    "ram4k": 0
+   }
+  }
+ },
+ "features": [
+  {
+   "help": "Run a list of layer descriptors with one start; fewer round trips on slow links.",
+   "id": "HAS_QUEUE",
+   "label": "Command queue"
+  },
+  {
+   "help": "MAC, stall, output and job counters.",
+   "id": "HAS_PERF",
+   "label": "Performance counters"
+  },
+  {
+   "help": "The engine walks convolution windows itself (padding, stride, dilation); no host-side im2col.",
+   "id": "HAS_WIN",
+   "label": "Window generator"
+  },
+  {
+   "help": "Layer outputs stay in input RAM; a chain of layers runs from one start.",
+   "id": "HAS_FUSE",
+   "label": "Layer fusion"
+  },
+  {
+   "help": "Two weights per byte; half the weight memory.",
+   "id": "HAS_W4",
+   "label": "4-bit weights"
+  },
+  {
+   "help": "4-bit indices into a 16-entry table fitted to the weights; hardware decompression.",
+   "id": "HAS_CB",
+   "label": "Codebook weights"
+  }
+ ],
+ "ff_per_ff": 0.816,
+ "lanes": [
+  1,
+  2,
+  4,
+  8
+ ],
+ "le_per_lut4": 0.874,
+ "pair": {
+  "1": {
+   "HAS_CB+HAS_FUSE": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": -12,
+    "lut4_nodsp": -12,
+    "ram4k": 0
+   },
+   "HAS_CB+HAS_QUEUE": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": -32,
+    "lut4_nodsp": -32,
+    "ram4k": 0
+   },
+   "HAS_CB+HAS_W4": {
+    "dsp": 0,
+    "ff": -1,
+    "lut4": -55,
+    "lut4_nodsp": -55,
+    "ram4k": 0
+   },
+   "HAS_CB+HAS_WIN": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": -23,
+    "lut4_nodsp": -23,
+    "ram4k": 0
+   },
+   "HAS_FUSE+HAS_PERF": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": -32,
+    "lut4_nodsp": -32,
+    "ram4k": 0
+   },
+   "HAS_FUSE+HAS_QUEUE": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": -41,
+    "lut4_nodsp": -41,
+    "ram4k": 0
+   },
+   "HAS_FUSE+HAS_W4": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": -24,
+    "lut4_nodsp": -24,
+    "ram4k": 0
+   },
+   "HAS_FUSE+HAS_WIN": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": -43,
+    "lut4_nodsp": -43,
+    "ram4k": 0
+   },
+   "HAS_PERF+HAS_WIN": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": 23,
+    "lut4_nodsp": 23,
+    "ram4k": 0
+   },
+   "HAS_QUEUE+HAS_WIN": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": 22,
+    "lut4_nodsp": 22,
+    "ram4k": 0
+   }
+  },
+  "4": {
+   "HAS_CB+HAS_FUSE": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": -21,
+    "lut4_nodsp": -21,
+    "ram4k": 0
+   },
+   "HAS_CB+HAS_PERF": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": -31,
+    "lut4_nodsp": -31,
+    "ram4k": 0
+   },
+   "HAS_CB+HAS_QUEUE": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": -176,
+    "lut4_nodsp": -176,
+    "ram4k": 0
+   },
+   "HAS_CB+HAS_W4": {
+    "dsp": 0,
+    "ff": -1,
+    "lut4": -42,
+    "lut4_nodsp": -42,
+    "ram4k": 0
+   },
+   "HAS_CB+HAS_WIN": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": -202,
+    "lut4_nodsp": -202,
+    "ram4k": 0
+   },
+   "HAS_FUSE+HAS_PERF": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": -37,
+    "lut4_nodsp": -37,
+    "ram4k": 0
+   },
+   "HAS_FUSE+HAS_QUEUE": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": -11,
+    "lut4_nodsp": -11,
+    "ram4k": 0
+   },
+   "HAS_PERF+HAS_QUEUE": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": -17,
+    "lut4_nodsp": -17,
+    "ram4k": 0
+   },
+   "HAS_PERF+HAS_W4": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": 13,
+    "lut4_nodsp": 13,
+    "ram4k": 0
+   },
+   "HAS_PERF+HAS_WIN": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": -17,
+    "lut4_nodsp": -17,
+    "ram4k": 0
+   },
+   "HAS_QUEUE+HAS_W4": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": 21,
+    "lut4_nodsp": 21,
+    "ram4k": 0
+   },
+   "HAS_QUEUE+HAS_WIN": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": 42,
+    "lut4_nodsp": 42,
+    "ram4k": 0
+   },
+   "HAS_W4+HAS_WIN": {
+    "dsp": 0,
+    "ff": 0,
+    "lut4": 36,
+    "lut4_nodsp": 36,
+    "ram4k": 0
+   }
+  }
+ },
+ "rq_files": {
+  "0": [
+   "tmf_requant.v"
+  ],
+  "1": [
+   "tmf_requant_pipe.v"
+  ]
+ },
+ "sources": {
+  "axil_bus.v": "// axil_bus.v - AXI4-Lite-slave-to-byte-bus bridge: for FPGAs where the engine sits behind a CPU (Zynq PS, a soft\n// core, a Linux board with an FPGA bridge). Each 32-bit word at AXI address A holds the four bytes at byte-bus\n// addresses A..A+3, little endian, so a CPU can use plain byte accesses (or byte-strobed words) on the engine's\n// register map: base + bus_addr. Writes honour WSTRB (one bus write per enabled byte); reads return all four bytes.\n// Always answers OKAY. Reads and writes are served one at a time (write first).\n\n`default_nettype none\n\nmodule axil_bus (\n    input  wire        clk,                   // AXI clock\n    input  wire        rst,                   // synchronous reset, active high\n    input  wire [15:0] awaddr,                // write address\n    input  wire        awvalid,\n    output reg         awready,\n    input  wire [31:0] wdata,                 // write data\n    input  wire [3:0]  wstrb,                 // byte enables\n    input  wire        wvalid,\n    output reg         wready,\n    output wire [1:0]  bresp,                 // always OKAY\n    output reg         bvalid,\n    input  wire        bready,\n    input  wire [15:0] araddr,                // read address\n    input  wire        arvalid,\n    output reg         arready,\n    output reg  [31:0] rdata,                 // read data\n    output wire [1:0]  rresp,                 // always OKAY\n    output reg         rvalid,\n    input  wire        rready,\n    output reg  [15:0] bus_addr,              // byte address\n    output reg         bus_wr,                // write strobe\n    output reg  [7:0]  bus_wdata,             // write data\n    output reg         bus_rd,                // read strobe\n    input  wire [7:0]  bus_rdata              // read data\n);\n\n    // States.\n    localparam [2:0] S_IDLE = 3'd0, S_WR = 3'd1, S_WRESP = 3'd2, S_RSET = 3'd3, S_RSTB = 3'd4, S_RRESP = 3'd5;\n\n    assign bresp = 2'b00;\n    assign rresp = 2'b00;\n\n    // State and byte index 0..3.\n    reg [2:0]  st;\n    reg [1:0]  k;\n    // Hold counter for the read address setup.\n    reg [1:0]  wt;\n    // Latched word address, data and strobes.\n    reg [15:0] a;\n    reg [31:0] d;\n    reg [3:0]  s;\n\n    always @(posedge clk) begin\n        // Strobes and one-clock handshakes default low.\n        bus_wr  <= 1'b0;\n        bus_rd  <= 1'b0;\n        awready <= 1'b0;\n        wready  <= 1'b0;\n        arready <= 1'b0;\n        if (rst) begin\n            st <= S_IDLE; bvalid <= 1'b0; rvalid <= 1'b0;\n        end else begin\n            case (st)\n                // Take a write (address and data together) or a read.\n                S_IDLE: begin\n                    k <= 2'd0;\n                    if (awvalid && wvalid) begin\n                        a <= {awaddr[15:2], 2'b00}; d <= wdata; s <= wstrb;\n                        awready <= 1'b1; wready <= 1'b1; st <= S_WR;\n                    end else if (arvalid) begin\n                        a <= {araddr[15:2], 2'b00}; arready <= 1'b1; wt <= 2'd0; st <= S_RSET;\n                        bus_addr <= {araddr[15:2], 2'b00};\n                    end\n                end\n                // One enabled byte per clock.\n                S_WR: begin\n                    if (s[k]) begin\n                        bus_addr <= {a[15:2], k}; bus_wdata <= d[8*k +: 8]; bus_wr <= 1'b1;\n                    end\n                    k <= k + 2'd1;\n                    if (k == 2'd3) begin st <= S_WRESP; bvalid <= 1'b1; end\n                end\n                // Write response.\n                S_WRESP: if (bvalid && bready) begin bvalid <= 1'b0; st <= S_IDLE; end\n                // Hold the address two clocks.\n                S_RSET: begin\n                    wt <= wt + 2'd1;\n                    if (wt == 2'd1) st <= S_RSTB;\n                end\n                // Strobe and capture byte k.\n                S_RSTB: begin\n                    bus_rd <= 1'b1;\n                    rdata[8*k +: 8] <= bus_rdata;\n                    k <= k + 2'd1;\n                    wt <= 2'd0;\n                    if (k == 2'd3) begin st <= S_RRESP; rvalid <= 1'b1; end\n                    else begin bus_addr <= {a[15:2], k + 2'd1}; st <= S_RSET; end\n                end\n                // Read response.\n                S_RRESP: if (rvalid && rready) begin rvalid <= 1'b0; st <= S_IDLE; end\n                default: st <= S_IDLE;\n            endcase\n        end\n    end\n\nendmodule\n\n`default_nettype wire\n",
+  "i2c_bus.v": "// i2c_bus.v - I2C-slave-to-byte-bus bridge (7-bit address, standard / fast mode, no clock stretching).\n// Same register pointer model as most I2C chips:\n//   write : START  addr+W  addr_hi  addr_lo  data...  STOP        data bytes are bus writes, address auto-increments\n//   read  : START  addr+W  addr_hi  addr_lo  RESTART  addr+R  data...(master NACKs the last one)  STOP\n//           after a read the pointer keeps counting, so a later plain read continues where it stopped\n// Every byte the slave receives is acknowledged; a wrong slave address is not acknowledged.\n// Needs SCL no faster than clk / 16 (the pins are sampled by the fabric clock). sda_low = 1 pulls SDA low.\n\n`default_nettype none\n\nmodule i2c_bus #(\n    parameter [6:0] I2C_ADDR = 7'h2A           // 7-bit slave address\n) (\n    input  wire        clk,                   // fabric clock\n    input  wire        rst,                   // synchronous reset, active high\n    input  wire        scl,                   // I2C clock\n    input  wire        sda_in,                // SDA as seen on the pin\n    output reg         sda_low,               // 1 = pull SDA low (open drain)\n    output reg  [15:0] bus_addr,              // byte address\n    output reg         bus_wr,                // write strobe\n    output reg  [7:0]  bus_wdata,             // write data\n    output reg         bus_rd,                // read strobe\n    input  wire [7:0]  bus_rdata              // read data\n);\n\n    // Transfer phases.\n    localparam [2:0] P_IDLE = 3'd0, P_ADDR = 3'd1, P_AH = 3'd2, P_AL = 3'd3, P_WR = 3'd4, P_TX = 3'd5;\n\n    // Pin synchronisers (the third stage gives the previous value).\n    reg [2:0] scl_q, sda_q;\n    // Edges and levels, in the fabric clock domain.\n    wire scl_s  = scl_q[1];\n    wire rise   = scl_q[1] & ~scl_q[2];\n    wire fall   = ~scl_q[1] & scl_q[2];\n    wire sda_s  = sda_q[1];\n    wire start  = scl_s & sda_q[2] & ~sda_q[1];\n    wire stop   = scl_s & ~sda_q[2] & sda_q[1];\n\n    // Phase, bit counter (0..9: 8 data bits then the acknowledge bit), shift registers.\n    reg [2:0] phase;\n    reg [3:0] bitcnt;\n    reg [7:0] rxsh, txb;\n    // The byte just received.\n    wire [7:0] rxb = {rxsh[6:0], sda_s};\n    // The slave acknowledges the byte just received.\n    reg       ack_pend;\n    // Master NACK seen after a transmitted byte, and \"a byte has been sent in this read\".\n    reg       m_nack, txsent;\n\n    // Read-ahead fetcher (same sequence as spi_bus.v).\n    reg       fetch_go;\n    reg [1:0] fst;\n    reg [7:0] fdata;\n\n    // Transfer decoder and bus master.\n    always @(posedge clk) begin\n        // Strobes default low.\n        bus_wr <= 1'b0;\n        bus_rd <= 1'b0;\n        // Synchronise the pins.\n        scl_q <= {scl_q[1:0], scl};\n        sda_q <= {sda_q[1:0], sda_in};\n        // The address moves on after every write strobe.\n        if (bus_wr) bus_addr <= bus_addr + 16'd1;\n        // Fetcher: hold the address two clocks, strobe and capture, advance.\n        case (fst)\n            2'd0: if (fetch_go) begin fst <= 2'd1; fetch_go <= 1'b0; end\n            2'd1: fst <= 2'd2;\n            2'd2: begin bus_rd <= 1'b1; fdata <= bus_rdata; fst <= 2'd3; end\n            default: begin bus_addr <= bus_addr + 16'd1; fst <= 2'd0; end\n        endcase\n        if (rst) begin\n            phase <= P_IDLE; bitcnt <= 4'd0; sda_low <= 1'b0; fst <= 2'd0; fetch_go <= 1'b0;\n            ack_pend <= 1'b0; m_nack <= 1'b0; txsent <= 1'b0;\n        end else if (start) begin\n            // START or repeated START: a new address byte follows.\n            phase <= P_ADDR; bitcnt <= 4'd0; sda_low <= 1'b0; ack_pend <= 1'b0;\n        end else if (stop) begin\n            // STOP: idle.\n            phase <= P_IDLE; bitcnt <= 4'd0; sda_low <= 1'b0;\n        end else if (phase != P_IDLE) begin\n            // Rising SCL: the master's data bit (or acknowledge) is valid.\n            if (rise) begin\n                bitcnt <= bitcnt + 4'd1;\n                if (bitcnt < 4'd8) begin\n                    // Receiving phases shift the bit in.\n                    if (phase != P_TX) rxsh <= {rxsh[6:0], sda_s};\n                    // The eighth bit completes a received byte.\n                    if (bitcnt == 4'd7 && phase != P_TX) begin\n                        case (phase)\n                            // Address byte: ours? then write (pointer) or read (data out).\n                            P_ADDR: begin\n                                ack_pend <= (rxb[7:1] == I2C_ADDR);\n                                if (rxb[7:1] != I2C_ADDR) phase <= P_IDLE;\n                                else if (rxb[0]) begin\n                                    // Read: fetch the byte at the pointer now, it goes out after the acknowledge.\n                                    phase <= P_TX; txsent <= 1'b0; m_nack <= 1'b0; fetch_go <= 1'b1;\n                                end else phase <= P_AH;\n                            end\n                            // Pointer high byte.\n                            P_AH: begin bus_addr[15:8] <= rxb; ack_pend <= 1'b1; phase <= P_AL; end\n                            // Pointer low byte.\n                            P_AL: begin bus_addr[7:0] <= rxb; ack_pend <= 1'b1; phase <= P_WR; end\n                            // Data byte: one bus write.\n                            P_WR: begin bus_wdata <= rxb; bus_wr <= 1'b1; ack_pend <= 1'b1; end\n                            default: ;\n                        endcase\n                    end\n                end else if (bitcnt == 4'd8 && phase == P_TX && txsent) begin\n                    // Ninth clock of a transmitted byte: the master's acknowledge (1 = NACK).\n                    m_nack <= sda_s;\n                end\n            end\n            // Falling SCL: drive the next bit.\n            if (fall) begin\n                if (bitcnt == 4'd8) begin\n                    // Start of the ninth clock: acknowledge a received byte, or let the master answer.\n                    sda_low <= (phase != P_TX) && ack_pend;\n                end else if (bitcnt == 4'd9) begin\n                    // End of the ninth clock.\n                    bitcnt <= 4'd0;\n                    if (phase == P_TX) begin\n                        if (txsent && m_nack) begin\n                            // The master has all it wants.\n                            phase <= P_IDLE; sda_low <= 1'b0;\n                        end else begin\n                            // Next byte out: bit 7 now, the fetch for the byte after it starts.\n                            txb <= fdata; sda_low <= ~fdata[7]; txsent <= 1'b1; fetch_go <= 1'b1;\n                        end\n                    end else sda_low <= 1'b0;\n                end else if (phase == P_TX && bitcnt != 4'd0) begin\n                    // Data bit 6 .. 0.\n                    sda_low <= ~txb[3'd7 - bitcnt[2:0]];\n                end\n            end\n        end\n    end\n\nendmodule\n\n`default_nettype wire\n",
+  "spi_bus.v": "// spi_bus.v - SPI-slave-to-byte-bus bridge (mode 0, MSB first): lets a microcontroller or a Linux board with a\n// plain SPI master drive tmf_engine (or any byte-bus peripheral). Same bus contract as uart_bus.v.\n// Frame (chip select low for the whole frame):\n//   byte 0 : CMD   bit7 = 1 read / 0 write, bits[6:0] = n - 1 (informational: chip select high ends the frame)\n//   byte 1 : address [15:8]       byte 2 : address [7:0]\n//   write  : data bytes follow, one bus write each, the address auto-increments\n//   read   : one dummy byte (the bridge fetches the first byte meanwhile), then the master clocks out the data\n// Needs SCK no faster than clk / 6 (the clock edges are sampled by the fabric clock).\n\n`default_nettype none\n\nmodule spi_bus (\n    input  wire        clk,                   // fabric clock\n    input  wire        rst,                   // synchronous reset, active high\n    input  wire        sck,                   // SPI clock from the master\n    input  wire        cs_n,                  // chip select, active low\n    input  wire        mosi,                  // master out, slave in\n    output wire        miso,                  // master in, slave out (drive it only while cs_n is low)\n    output wire        miso_oe,               // 1 while the bridge is selected\n    output reg  [15:0] bus_addr,              // byte address\n    output reg         bus_wr,                // write strobe\n    output reg  [7:0]  bus_wdata,             // write data\n    output reg         bus_rd,                // read strobe\n    input  wire [7:0]  bus_rdata              // read data\n);\n\n    // Frame phases.\n    localparam [2:0] P_CMD = 3'd0, P_AH = 3'd1, P_AL = 3'd2, P_WR = 3'd3, P_DUMMY = 3'd4, P_RD = 3'd5;\n\n    // Synchronisers for the asynchronous pins (three stages of sck to also keep the previous value).\n    reg [2:0] sck_q;\n    reg [1:0] cs_q, mosi_q;\n    // Synchronised clock edges and levels.\n    wire rise = sck_q[1] & ~sck_q[2];\n    wire fall = ~sck_q[1] & sck_q[2];\n    wire sel  = ~cs_q[1];\n    wire mosi_s = mosi_q[1];\n\n    // Frame state.\n    reg [2:0] phase;\n    reg       is_rd;\n    // Bit counter and shift registers.\n    reg [2:0] bitcnt;\n    reg [7:0] rxsh, txsh;\n    // Next byte to send, applied on the falling edge after the byte ends (MISO must hold until then).\n    reg [7:0] txn;\n    reg       ldp;\n    // The byte just completed.\n    wire [7:0] rxb = {rxsh[6:0], mosi_s};\n    // Byte-complete event: the 8th rising edge of a selected frame.\n    wire byte_done = sel && rise && (bitcnt == 3'd7);\n\n    // Read-ahead fetcher: fetch_go starts a bus read of bus_addr; fvalid says fdata holds the byte.\n    reg       fetch_go;\n    reg [2:0] fst;\n    reg       fvalid;\n    reg [7:0] fdata;\n\n    // Output shift register drives MISO.\n    assign miso    = txsh[7];\n    assign miso_oe = sel;\n\n    // Frame decoder and bus master.\n    always @(posedge clk) begin\n        // Strobes default low.\n        bus_wr <= 1'b0;\n        bus_rd <= 1'b0;\n        // Synchronise the pins.\n        sck_q  <= {sck_q[1:0], sck};\n        cs_q   <= {cs_q[0], cs_n};\n        mosi_q <= {mosi_q[0], mosi};\n        // Address advances after each write strobe.\n        if (bus_wr) bus_addr <= bus_addr + 16'd1;\n        // Read-ahead fetcher: two clocks of address setup, then capture and move on.\n        case (fst)\n            3'd0: if (fetch_go) begin fst <= 3'd1; fetch_go <= 1'b0; fvalid <= 1'b0; end\n            3'd1: fst <= 3'd2;\n            3'd2: begin\n                // Strobe and capture (the address has been stable for two clocks).\n                bus_rd <= 1'b1;\n                fdata  <= bus_rdata;\n                fst    <= 3'd3;\n            end\n            3'd3: begin\n                // Next address for the following fetch; the byte is ready.\n                bus_addr <= bus_addr + 16'd1;\n                fvalid   <= 1'b1;\n                fst      <= 3'd0;\n            end\n            default: fst <= 3'd0;\n        endcase\n        // Chip select high: back to the start of a frame.\n        if (rst || !sel) begin\n            phase    <= P_CMD;\n            bitcnt   <= 3'd0;\n            txsh     <= 8'h00;\n            ldp      <= 1'b0;\n            fetch_go <= 1'b0;\n            fvalid   <= 1'b0;\n            if (rst) fst <= 3'd0;\n        end else begin\n            // Rising edge: sample MOSI.\n            if (rise) begin\n                rxsh   <= {rxsh[6:0], mosi_s};\n                bitcnt <= bitcnt + 3'd1;\n            end\n            // Falling edge: load the pending byte, else present the next bit.\n            if (fall) begin\n                if (ldp) begin txsh <= txn; ldp <= 1'b0; end\n                else if (bitcnt != 3'd0) txsh <= {txsh[6:0], 1'b0};\n            end\n            // A byte is complete.\n            if (byte_done) begin\n                case (phase)\n                    // Command byte.\n                    P_CMD: begin is_rd <= rxb[7]; phase <= P_AH; end\n                    // Address high.\n                    P_AH: begin bus_addr[15:8] <= rxb; phase <= P_AL; end\n                    // Address low; reads start fetching their first byte.\n                    P_AL: begin\n                        bus_addr[7:0] <= rxb;\n                        phase <= is_rd ? P_DUMMY : P_WR;\n                        fetch_go <= is_rd;\n                    end\n                    // Write data: one bus write.\n                    P_WR: begin bus_wdata <= rxb; bus_wr <= 1'b1; end\n                    // The dummy byte ends: the first data byte goes to the shifter, the next fetch starts.\n                    P_DUMMY: begin txn <= fdata; ldp <= 1'b1; phase <= P_RD; fetch_go <= 1'b1; end\n                    // Data bytes: load the prefetched byte, fetch the next.\n                    P_RD: begin txn <= fdata; ldp <= 1'b1; fetch_go <= 1'b1; end\n                    default: phase <= P_CMD;\n                endcase\n            end\n        end\n    end\n\nendmodule\n\n`default_nettype wire\n",
+  "tinyml_axil_top.v": "// tinyml_axil_top.v - ready-to-use top: AXI4-Lite slave bridge + int8 engine, for any FPGA board.\n// Vendor-neutral plain Verilog. Same register map and frame rules as tinyml_uart_top.v.\n\n`default_nettype none\n\nmodule tinyml_axil_top #(\n    parameter W_AW   = 12,              // weight RAM address width    (bytes = 2^W_AW, max 15)\n    parameter X_AW   = 10,              // input RAM address width     (max 12)\n    parameter Y_AW   = 8,               // output RAM address width    (max 12)\n    parameter P_AW   = 10,              // parameter RAM address width (16 B per channel, max 12)\n    parameter LANES  = 1,               // output channels computed at once: 1, 2, 4 or 8\n    parameter RQ_MODE = 0,              // requantiser: 0 serial (smallest), 1 pipelined (fastest, 4 multipliers)\n    parameter HAS_QUEUE = 0,            // job descriptor queue\n    parameter D_AW    = 9,              // descriptor RAM address width (64 B per descriptor)\n    parameter HAS_PERF = 0,             // performance counters\n    parameter HAS_WIN  = 0,             // input window generator (no host-side im2col)\n    parameter HAS_FUSE = 0,             // layer outputs can be written back into X\n    parameter HAS_W4   = 0,             // 4-bit weights\n    parameter HAS_CB   = 0              // codebook-compressed weights\n) (\n    input  wire        clk,             // board clock = AXI clock\n    input  wire        rst,             // reset, active high (e.g. a push button)\n    input  wire [15:0] s_axi_awaddr,    // AXI4-Lite slave port (byte addresses, 32-bit data, little endian)\n    input  wire        s_axi_awvalid,\n    output wire        s_axi_awready,\n    input  wire [31:0] s_axi_wdata,\n    input  wire [3:0]  s_axi_wstrb,\n    input  wire        s_axi_wvalid,\n    output wire        s_axi_wready,\n    output wire [1:0]  s_axi_bresp,\n    output wire        s_axi_bvalid,\n    input  wire        s_axi_bready,\n    input  wire [15:0] s_axi_araddr,\n    input  wire        s_axi_arvalid,\n    output wire        s_axi_arready,\n    output wire [31:0] s_axi_rdata,\n    output wire [1:0]  s_axi_rresp,\n    output wire        s_axi_rvalid,\n    input  wire        s_axi_rready,\n    output wire [2:0]  status           // {done, error, busy} for LEDs\n);\n\n    // Bus address.\n    wire [15:0] addr;\n    // Bus write strobe.\n    wire        wr;\n    // Bus write data.\n    wire [7:0]  wdata;\n    // Bus read strobe.\n    wire        rd;\n    // Bus read data.\n    wire [7:0]  rdata;\n    // Engine status byte.\n    wire [7:0]  st;\n\n    // Power-on reset counter.\n    reg  [7:0] por = 8'd0;\n    // Reset input synchroniser.\n    reg  [1:0] rst_sync = 2'b00;\n    // Internal reset: power-on or the reset input.\n    wire       rst_i = (por != 8'hFF) | rst_sync[1];\n\n    // Power-on counter and reset synchroniser.\n    always @(posedge clk) begin\n        // Count to the end value, then stay.\n        if (por != 8'hFF) por <= por + 8'd1;\n        // Synchronise the asynchronous reset input.\n        rst_sync <= {rst_sync[0], rst};\n    end\n\n    // Done, error and busy bits for LEDs.\n    assign status = {st[1], st[2], st[0]};\n\n    // This contains the instantiation for the AXI4-Lite bridge\n    axil_bus u_bridge (\n        .clk(clk), .rst(rst_i),\n        .awaddr(s_axi_awaddr), .awvalid(s_axi_awvalid), .awready(s_axi_awready),\n        .wdata(s_axi_wdata), .wstrb(s_axi_wstrb), .wvalid(s_axi_wvalid), .wready(s_axi_wready),\n        .bresp(s_axi_bresp), .bvalid(s_axi_bvalid), .bready(s_axi_bready),\n        .araddr(s_axi_araddr), .arvalid(s_axi_arvalid), .arready(s_axi_arready),\n        .rdata(s_axi_rdata), .rresp(s_axi_rresp), .rvalid(s_axi_rvalid), .rready(s_axi_rready),\n        .bus_addr(addr), .bus_wr(wr), .bus_wdata(wdata), .bus_rd(rd), .bus_rdata(rdata));\n\n    // This contains the instantiation for the int8 engine\n    tmf_engine #(.W_AW(W_AW), .X_AW(X_AW), .Y_AW(Y_AW), .P_AW(P_AW), .LANES(LANES), .RQ_MODE(RQ_MODE),\n                .HAS_QUEUE(HAS_QUEUE), .D_AW(D_AW), .HAS_PERF(HAS_PERF), .HAS_WIN(HAS_WIN), .HAS_FUSE(HAS_FUSE), .HAS_W4(HAS_W4), .HAS_CB(HAS_CB)) u_engine (\n        .clk(clk), .rst(rst_i),\n        .bus_addr(addr), .bus_wr(wr), .bus_wdata(wdata), .bus_rd(rd), .bus_rdata(rdata),\n        .status_o(st));\n\nendmodule\n\n`default_nettype wire\n",
+  "tinyml_i2c_top.v": "// tinyml_i2c_top.v - ready-to-use top: I2C-slave bridge + int8 engine, for any FPGA board.\n// Vendor-neutral plain Verilog. Same register map and frame rules as tinyml_uart_top.v.\n\n`default_nettype none\n\nmodule tinyml_i2c_top #(\n    parameter I2C_ADDR = 7'h2A,         // 7-bit I2C slave address\n    parameter W_AW   = 12,              // weight RAM address width    (bytes = 2^W_AW, max 15)\n    parameter X_AW   = 10,              // input RAM address width     (max 12)\n    parameter Y_AW   = 8,               // output RAM address width    (max 12)\n    parameter P_AW   = 10,              // parameter RAM address width (16 B per channel, max 12)\n    parameter LANES  = 1,               // output channels computed at once: 1, 2, 4 or 8\n    parameter RQ_MODE = 0,              // requantiser: 0 serial (smallest), 1 pipelined (fastest, 4 multipliers)\n    parameter HAS_QUEUE = 0,            // job descriptor queue\n    parameter D_AW    = 9,              // descriptor RAM address width (64 B per descriptor)\n    parameter HAS_PERF = 0,             // performance counters\n    parameter HAS_WIN  = 0,             // input window generator (no host-side im2col)\n    parameter HAS_FUSE = 0,             // layer outputs can be written back into X\n    parameter HAS_W4   = 0,             // 4-bit weights\n    parameter HAS_CB   = 0              // codebook-compressed weights\n) (\n    input  wire       clk,              // board clock (SCL must be at most clk / 16)\n    input  wire       rst,              // reset, active high (e.g. a push button)\n    input  wire       i2c_scl,          // I2C clock from the master (no clock stretching)\n    inout  wire       i2c_sda,          // I2C data (open drain, needs a pull-up)\n    output wire [2:0] status            // {done, error, busy} for LEDs\n);\n\n    // Bus address.\n    wire [15:0] addr;\n    // Bus write strobe.\n    wire        wr;\n    // Bus write data.\n    wire [7:0]  wdata;\n    // Bus read strobe.\n    wire        rd;\n    // Bus read data.\n    wire [7:0]  rdata;\n    // Engine status byte.\n    wire [7:0]  st;\n\n    // Power-on reset counter.\n    reg  [7:0] por = 8'd0;\n    // Reset input synchroniser.\n    reg  [1:0] rst_sync = 2'b00;\n    // Internal reset: power-on or the reset input.\n    wire       rst_i = (por != 8'hFF) | rst_sync[1];\n\n    // Power-on counter and reset synchroniser.\n    always @(posedge clk) begin\n        // Count to the end value, then stay.\n        if (por != 8'hFF) por <= por + 8'd1;\n        // Synchronise the asynchronous reset input.\n        rst_sync <= {rst_sync[0], rst};\n    end\n\n    // Done, error and busy bits for LEDs.\n    assign status = {st[1], st[2], st[0]};\n\n    // SDA pulled low by the bridge.\n    wire        sda_low;\n\n    // Open-drain SDA: low or released.\n    assign i2c_sda = sda_low ? 1'b0 : 1'bz;\n\n    // This contains the instantiation for the I2C bridge\n    i2c_bus #(.I2C_ADDR(I2C_ADDR)) u_bridge (\n        .clk(clk), .rst(rst_i), .scl(i2c_scl), .sda_in(i2c_sda), .sda_low(sda_low),\n        .bus_addr(addr), .bus_wr(wr), .bus_wdata(wdata), .bus_rd(rd), .bus_rdata(rdata));\n\n    // This contains the instantiation for the int8 engine\n    tmf_engine #(.W_AW(W_AW), .X_AW(X_AW), .Y_AW(Y_AW), .P_AW(P_AW), .LANES(LANES), .RQ_MODE(RQ_MODE),\n                .HAS_QUEUE(HAS_QUEUE), .D_AW(D_AW), .HAS_PERF(HAS_PERF), .HAS_WIN(HAS_WIN), .HAS_FUSE(HAS_FUSE), .HAS_W4(HAS_W4), .HAS_CB(HAS_CB)) u_engine (\n        .clk(clk), .rst(rst_i),\n        .bus_addr(addr), .bus_wr(wr), .bus_wdata(wdata), .bus_rd(rd), .bus_rdata(rdata),\n        .status_o(st));\n\nendmodule\n\n`default_nettype wire\n",
+  "tinyml_spi_top.v": "// tinyml_spi_top.v - ready-to-use top: SPI-slave bridge (mode 0) + int8 engine, for any FPGA board.\n// Vendor-neutral plain Verilog. Same register map and frame rules as tinyml_uart_top.v.\n\n`default_nettype none\n\nmodule tinyml_spi_top #(\n    parameter W_AW   = 12,              // weight RAM address width    (bytes = 2^W_AW, max 15)\n    parameter X_AW   = 10,              // input RAM address width     (max 12)\n    parameter Y_AW   = 8,               // output RAM address width    (max 12)\n    parameter P_AW   = 10,              // parameter RAM address width (16 B per channel, max 12)\n    parameter LANES  = 1,               // output channels computed at once: 1, 2, 4 or 8\n    parameter RQ_MODE = 0,              // requantiser: 0 serial (smallest), 1 pipelined (fastest, 4 multipliers)\n    parameter HAS_QUEUE = 0,            // job descriptor queue\n    parameter D_AW    = 9,              // descriptor RAM address width (64 B per descriptor)\n    parameter HAS_PERF = 0,             // performance counters\n    parameter HAS_WIN  = 0,             // input window generator (no host-side im2col)\n    parameter HAS_FUSE = 0,             // layer outputs can be written back into X\n    parameter HAS_W4   = 0,             // 4-bit weights\n    parameter HAS_CB   = 0              // codebook-compressed weights\n) (\n    input  wire       clk,              // board clock (SCK must be at most clk / 6)\n    input  wire       rst,              // reset, active high (e.g. a push button)\n    input  wire       spi_sck,          // SPI clock from the master (mode 0)\n    input  wire       spi_cs_n,         // SPI chip select, active low\n    input  wire       spi_mosi,         // SPI data from the master\n    output wire       spi_miso,         // SPI data to the master (high impedance while not selected)\n    output wire [2:0] status            // {done, error, busy} for LEDs\n);\n\n    // Bus address.\n    wire [15:0] addr;\n    // Bus write strobe.\n    wire        wr;\n    // Bus write data.\n    wire [7:0]  wdata;\n    // Bus read strobe.\n    wire        rd;\n    // Bus read data.\n    wire [7:0]  rdata;\n    // Engine status byte.\n    wire [7:0]  st;\n\n    // Power-on reset counter.\n    reg  [7:0] por = 8'd0;\n    // Reset input synchroniser.\n    reg  [1:0] rst_sync = 2'b00;\n    // Internal reset: power-on or the reset input.\n    wire       rst_i = (por != 8'hFF) | rst_sync[1];\n\n    // Power-on counter and reset synchroniser.\n    always @(posedge clk) begin\n        // Count to the end value, then stay.\n        if (por != 8'hFF) por <= por + 8'd1;\n        // Synchronise the asynchronous reset input.\n        rst_sync <= {rst_sync[0], rst};\n    end\n\n    // Done, error and busy bits for LEDs.\n    assign status = {st[1], st[2], st[0]};\n\n    // MISO output enable from the bridge.\n    wire        miso_oe;\n    // MISO value from the bridge.\n    wire        miso_v;\n\n    // MISO is released while the chip select is high.\n    assign spi_miso = miso_oe ? miso_v : 1'bz;\n\n    // This contains the instantiation for the SPI bridge\n    spi_bus u_bridge (\n        .clk(clk), .rst(rst_i), .sck(spi_sck), .cs_n(spi_cs_n), .mosi(spi_mosi), .miso(miso_v), .miso_oe(miso_oe),\n        .bus_addr(addr), .bus_wr(wr), .bus_wdata(wdata), .bus_rd(rd), .bus_rdata(rdata));\n\n    // This contains the instantiation for the int8 engine\n    tmf_engine #(.W_AW(W_AW), .X_AW(X_AW), .Y_AW(Y_AW), .P_AW(P_AW), .LANES(LANES), .RQ_MODE(RQ_MODE),\n                .HAS_QUEUE(HAS_QUEUE), .D_AW(D_AW), .HAS_PERF(HAS_PERF), .HAS_WIN(HAS_WIN), .HAS_FUSE(HAS_FUSE), .HAS_W4(HAS_W4), .HAS_CB(HAS_CB)) u_engine (\n        .clk(clk), .rst(rst_i),\n        .bus_addr(addr), .bus_wr(wr), .bus_wdata(wdata), .bus_rd(rd), .bus_rdata(rdata),\n        .status_o(st));\n\nendmodule\n\n`default_nettype wire\n",
+  "tinyml_uart_top.v": "// tinyml_uart_top.v - ready-to-use top: UART bridge + int8 engine, for any FPGA board.\n// Driven from a PC with tinyml_fpga.load(..., backend=\"uart:PORT\", baud=BAUD).\n// Vendor-neutral: plain Verilog, inferred block RAM, no vendor primitives. To use it on a board,\n// connect clk / rst / uart_rx / uart_tx (and optionally the status LEDs) in your pin constraints,\n// and set CLK_HZ, BAUD and the RAM sizes to fit the device.\n\n`default_nettype none\n\nmodule tinyml_uart_top #(\n    parameter CLK_HZ = 100000000,       // board clock in Hz\n    parameter BAUD   = 921600,          // UART baud rate (pass the same value to UartBus)\n    parameter W_AW   = 12,              // weight RAM address width    (bytes = 2^W_AW, max 15)\n    parameter X_AW   = 10,              // input RAM address width     (max 12)\n    parameter Y_AW   = 8,               // output RAM address width    (max 12)\n    parameter P_AW   = 10,              // parameter RAM address width (16 B per channel, max 12)\n    parameter LANES  = 1,               // output channels computed at once: 1, 2, 4 or 8\n    parameter RQ_MODE = 0,              // requantiser: 0 serial (smallest), 1 pipelined (fastest, 4 multipliers)\n    parameter HAS_QUEUE = 0,            // job descriptor queue\n    parameter D_AW    = 9,              // descriptor RAM address width (64 B per descriptor)\n    parameter HAS_PERF = 0,             // performance counters\n    parameter HAS_WIN  = 0,             // input window generator (no host-side im2col)\n    parameter HAS_FUSE = 0,             // layer outputs can be written back into X\n    parameter HAS_W4   = 0,             // 4-bit weights\n    parameter HAS_CB   = 0              // codebook-compressed weights\n) (\n    input  wire       clk,              // board clock\n    input  wire       rst,              // reset, active high (e.g. a push button)\n    input  wire       uart_rx,          // UART from the PC\n    output wire       uart_tx,          // UART to the PC\n    output wire [2:0] status            // {done, error, busy} for LEDs\n);\n\n    // Bus address.\n    wire [15:0] addr;\n    // Bus write strobe.\n    wire        wr;\n    // Bus write data.\n    wire [7:0]  wdata;\n    // Bus read strobe.\n    wire        rd;\n    // Bus read data.\n    wire [7:0]  rdata;\n    // Engine status byte.\n    wire [7:0]  st;\n\n    // Power-on reset counter.\n    reg  [7:0] por = 8'd0;\n    // Reset input synchroniser.\n    reg  [1:0] rst_sync = 2'b00;\n    // Internal reset: power-on or the reset input.\n    wire       rst_i = (por != 8'hFF) | rst_sync[1];\n\n    // Power-on counter and reset synchroniser.\n    always @(posedge clk) begin\n        // Count to the end value, then stay.\n        if (por != 8'hFF) por <= por + 8'd1;\n        // Synchronise the asynchronous reset input.\n        rst_sync <= {rst_sync[0], rst};\n    end\n\n    // Done, error and busy bits for LEDs.\n    assign status = {st[1], st[2], st[0]};\n\n    // This contains the instantiation for the UART bridge\n    uart_bus #(.CLKS_PER_BIT((CLK_HZ + BAUD / 2) / BAUD), .TIMEOUT(CLK_HZ / 100)) u_bridge (\n        .clk(clk), .rst(rst_i), .rx(uart_rx), .tx(uart_tx),\n        .bus_addr(addr), .bus_wr(wr), .bus_wdata(wdata), .bus_rd(rd), .bus_rdata(rdata));\n\n    // This contains the instantiation for the int8 engine\n    tmf_engine #(.W_AW(W_AW), .X_AW(X_AW), .Y_AW(Y_AW), .P_AW(P_AW), .LANES(LANES), .RQ_MODE(RQ_MODE),\n                .HAS_QUEUE(HAS_QUEUE), .D_AW(D_AW), .HAS_PERF(HAS_PERF), .HAS_WIN(HAS_WIN), .HAS_FUSE(HAS_FUSE), .HAS_W4(HAS_W4), .HAS_CB(HAS_CB)) u_engine (\n        .clk(clk), .rst(rst_i),\n        .bus_addr(addr), .bus_wr(wr), .bus_wdata(wdata), .bus_rd(rd), .bus_rdata(rdata),\n        .status_o(st));\n\nendmodule\n\n`default_nettype wire\n",
+  "tmf_engine.v": "// tmf_engine.v - int8 dot-product engine for tinyml_fpga (conv / depthwise / fully-connected layers).\n//\n// For every input vector v (0..NVEC-1) and output channel o (0..N-1):\n//   acc = bias[o] + sum_k (X[v*XSTRIDE + (DW ? o*K : 0) + k] + IN_OFF) * W[row(o) + k]\n//   Y[v*N + o] = requant(acc)           (MODE.RAW: Y[(v*N+o)*4 .. +3] = acc, little endian)\n// LANES output channels are computed at once (they share the input stream and each reads its own weight\n// RAM bank). Finished accumulators are handed to a background unit that requantises them and writes Y\n// while the next group is already being multiplied, so the requantiser's latency is hidden.\n//\n// Weight and parameter RAMs are split into LANES banks selected by the TOP bits of the W / P address\n// window. Channel o lives in bank (o % LANES) at local row (o / LANES), so a layer of N channels needs\n// ceil(N / LANES) rows per bank. WBASE and PBASE are local (per-bank) offsets. With LANES = 1 this is the\n// plain contiguous layout. The driver (tinyml_fpga/engine.py) hides the layout.\n//\n// It sits on a simple byte bus (driven by uart_bus.v, or any bridge of your own):\n//   bus_addr stable at least one clock before bus_rd; bus_rdata is valid in the bus_rd clock;\n//   bus_wr is a one-clock strobe with bus_addr/bus_wdata. Register map: see tinyml_fpga/engine.py.\n//   0x100-0x115 config (RW), 0x118 QCNT, 0x119 QDONE, 0x11F CTRL (W), 0x120 STATUS, 0x121-0x124 CYCLES,\n//   0x130-0x138 ID (RO), 0x140-0x15E window descriptor (RW, HAS_WIN), 0x160-0x16F performance counters (RO)\n//   0x1000 X, 0x2000 Y (RO from the bus), 0x3000 P (16 B per channel), 0x4000 D (job descriptors), 0x8000 W\n// With HAS_QUEUE a list of job descriptors (the same bytes as the config block, 64 B per slot) can be written\n// to D and run back to back with one CTRL = 0x02, which saves the host a configure / start / poll round trip\n// per job. HAS_PERF adds counters for MAC clocks, stall clocks, output bytes and finished jobs.\n// HAS_W4 stores weights as signed 4-bit values, two per W byte (low nibble = even index), halving weight RAM.\n// HAS_WIN adds an input-window generator: with MODE bit 2 the engine walks the (padded, strided, dilated)\n// convolution window of every output pixel straight out of an NHWC image in X, so the host no longer builds\n// im2col patches. HAS_FUSE lets a job write its outputs into X (MODE bit 3) instead of Y, so the next layer of\n// a queue reads them in place and a whole run of layers needs one start.\n// Bus writes to config and memories are ignored while the engine is busy.\n\n`default_nettype none\n\nmodule tmf_engine #(\n    parameter W_AW    = 12,              // weight RAM address width, all banks together (bytes = 2^W_AW, max 15)\n    parameter X_AW    = 10,              // input RAM address width    (max 12)\n    parameter Y_AW    = 8,               // output RAM address width   (max 12)\n    parameter P_AW    = 10,              // parameter RAM address width, all banks together (16 B per channel, max 12)\n    parameter LANES   = 1,               // output channels computed at once: 1, 2, 4 or 8\n    parameter RQ_MODE = 0,               // requantiser: 0 serial (smallest), 1 pipelined (needs 4 multipliers)\n    parameter HAS_QUEUE = 0,             // job descriptor queue (CTRL 0x02 runs QCNT descriptors from D)\n    parameter D_AW    = 9,               // descriptor RAM address width (64 B per descriptor, max 12)\n    parameter HAS_PERF = 0,              // performance counters at 0x160\n    parameter HAS_WIN  = 0,              // input window generator (MODE bit 2)\n    parameter HAS_FUSE = 0,              // outputs can be written into X (MODE bit 3)\n    parameter HAS_W4   = 0,              // 4-bit weights, two per byte (MODE bit 4)\n    parameter HAS_CB   = 0               // codebook weights: 4-bit indices into a 16-entry int8 table (MODE bit 5)\n) (\n    input  wire        clk,              // clock\n    input  wire        rst,              // synchronous reset, active high\n    input  wire [15:0] bus_addr,         // byte address\n    input  wire        bus_wr,           // write strobe\n    input  wire [7:0]  bus_wdata,        // write data\n    input  wire        bus_rd,           // read strobe (reads have no side effects, kept for the bus contract)\n    output reg  [7:0]  bus_rdata,        // read data\n    output wire [7:0]  status_o          // STATUS byte (bit0 busy, bit1 done, bit2 error) for LEDs or a status register\n);\n\n    // ---------------------------------------------------------------- constants\n    // Bank-select bits: log2(LANES).\n    localparam LB = (LANES >= 8) ? 3 : (LANES >= 4) ? 2 : (LANES >= 2) ? 1 : 0;\n    // Address width inside one weight bank.\n    localparam WA = W_AW - LB;\n    // Address width inside one parameter bank.\n    localparam PA = P_AW - LB;\n    // Weight bank size in bytes.\n    localparam [32:0] BWSIZE = 33'd1 << WA;\n    // Input RAM size.\n    localparam [32:0] XSIZE = 33'd1 << X_AW;\n    // Output RAM size.\n    localparam [32:0] YSIZE = 33'd1 << Y_AW;\n    // Parameter bank size in bytes.\n    localparam [32:0] BPSIZE = 33'd1 << PA;\n    // LANES as a 4-bit constant.\n    localparam [3:0] LANES4 = LANES;\n    // Feature bits reported in the ID block.\n    localparam [7:0] FEATURES = {1'b0, (HAS_PERF != 0), (HAS_CB != 0), (HAS_W4 != 0), (HAS_FUSE != 0), (HAS_WIN != 0), (HAS_QUEUE != 0), (RQ_MODE == 1)};\n    // Descriptor RAM size in bytes.\n    localparam [32:0] DSIZE = 33'd1 << D_AW;\n    // Configuration bytes held in a descriptor.\n    localparam NCFG = (HAS_WIN != 0) ? 53 : 22;\n    // Width of the output write address (the outputs may go to X).\n    localparam YW = (HAS_FUSE != 0 && X_AW > Y_AW) ? X_AW : Y_AW;\n\n    // Sequencer states.\n    localparam [3:0] S_IDLE  = 4'd0;     // waiting for CTRL.start\n    localparam [3:0] S_CHK   = 4'd1;     // bounds check for the next group\n    localparam [3:0] S_PAR   = 4'd2;     // fetch the 9 parameter bytes of every lane\n    localparam [3:0] S_INIT  = 4'd3;     // load biases\n    localparam [3:0] S_DOT   = 4'd4;     // issue K multiply-accumulates\n    localparam [3:0] S_DRAIN = 4'd5;     // let the MAC pipeline empty, then hand the group to the output unit\n    localparam [3:0] S_NEXT  = 4'd6;     // advance to the next group\n    localparam [3:0] S_FIN   = 4'd7;     // wait for the output unit, then finish\n    localparam [3:0] S_ERRW  = 4'd8;     // wait for the output unit, then report an error\n    localparam [3:0] S_LD    = 4'd9;     // load the next descriptor from D into the config registers\n    localparam [3:0] S_JSTART = 4'd10;   // validate the config and set up the job\n    localparam [3:0] S_CBL   = 4'd11;    // load the codebook (one 16-byte record of parameter bank 0)\n\n    // ---------------------------------------------------------------- bus decode\n    // Address is in the config/control register block.\n    wire sel_reg = (bus_addr[15:8] == 8'h01);\n    // Address is in the X window.\n    wire sel_x   = (bus_addr[15:12] == 4'h1);\n    // Address is in the Y window.\n    wire sel_y   = (bus_addr[15:12] == 4'h2);\n    // Address is in the P window.\n    wire sel_p   = (bus_addr[15:12] == 4'h3);\n    // Address is in the D (descriptor) window.\n    wire sel_d   = (bus_addr[15:12] == 4'h4);\n    // Address is in the W window.\n    wire sel_w   = bus_addr[15];\n    // Address is in the window descriptor block 0x140..0x15E.\n    wire win_reg = (HAS_WIN != 0) && sel_reg && (bus_addr[7:6] == 2'b01) && (bus_addr[5:0] <= 6'd30);\n    // Address is a config byte; its index in the descriptor-ordered array (0x100.. = 0..21, 0x140.. = 22..52).\n    wire cfg_hit = (sel_reg && (bus_addr[7:0] < 8'd22)) || win_reg;\n    // Index of the addressed config byte.\n    wire [5:0] cfg_idx = win_reg ? (6'd22 + bus_addr[5:0]) : bus_addr[5:0];\n    // Weight bank addressed by the bus.\n    wire [2:0] bank_w = (bus_addr >> WA) & (LANES - 1);\n    // Parameter bank addressed by the bus.\n    wire [2:0] bank_p = (bus_addr >> PA) & (LANES - 1);\n\n    // ---------------------------------------------------------------- configuration registers\n    // Raw config bytes 0x100..0x115 (descriptor order).\n    reg  [7:0] cfg [0:NCFG-1];\n    // Dot-product length.\n    wire [15:0] cK       = {cfg[1],  cfg[0]};\n    // Output channels.\n    wire [15:0] cN       = {cfg[3],  cfg[2]};\n    // Vectors per job.\n    wire [15:0] cNVEC    = {cfg[5],  cfg[4]};\n    // Bytes between vectors.\n    wire [15:0] cXSTRIDE = {cfg[7],  cfg[6]};\n    // Weight base offset (local, per bank).\n    wire [15:0] cWBASE   = {cfg[9],  cfg[8]};\n    // Parameter base record (local, per bank).\n    wire [15:0] cPBASE   = {cfg[11], cfg[10]};\n    // Input offset (9 significant bits).\n    wire signed [15:0] cINOFF = {cfg[13], cfg[12]};\n    // Output zero point.\n    wire signed [7:0] cZP    = cfg[14];\n    // Clamp low.\n    wire signed [7:0] cAMIN  = cfg[15];\n    // Clamp high.\n    wire signed [7:0] cAMAX  = cfg[16];\n    // Depthwise mode bit.\n    wire cDW  = cfg[17][0];\n    // Raw int32 output mode bit.\n    wire cRAW = cfg[17][1];\n    // Window mode bit (HAS_WIN).\n    wire cWIN  = (HAS_WIN != 0) && cfg[17][2];\n    // 4-bit weights: each W byte holds two, low nibble first (HAS_W4).\n    wire cW4   = (HAS_W4 != 0) && cfg[17][4];\n    // Codebook weights: the 4-bit index selects an int8 value from a table loaded at job start (HAS_CB).\n    wire cCB   = (HAS_CB != 0) && cfg[17][5];\n    // Weights are stored as packed nibbles.\n    wire cW4p  = cW4 || cCB;\n    // Write the outputs into X (HAS_FUSE).\n    wire cOUTX = (HAS_FUSE != 0) && cfg[17][3];\n    // Input base offset in X.\n    wire [15:0] cXBASE = {cfg[19], cfg[18]};\n    // Output base offset in Y.\n    wire [15:0] cYBASE = {cfg[21], cfg[20]};\n    // Number of descriptors to run (queue mode).\n    reg  [7:0] cQCNT;\n    // Window descriptor bytes (zero without HAS_WIN).\n    wire [7:0] wf [0:30];\n    genvar gi;\n    generate\n        for (gi = 0; gi < 31; gi = gi + 1) begin : g_wf\n            if (HAS_WIN != 0) begin : g_on\n                // Byte gi of the window block.\n                assign wf[gi] = cfg[22 + gi];\n            end else begin : g_off\n                // No window generator: zero.\n                assign wf[gi] = 8'h00;\n            end\n        end\n    endgenerate\n    // Image height, width, channels.\n    wire signed [15:0] cH   = {wf[1],  wf[0]};\n    wire signed [15:0] cWW  = {wf[3],  wf[2]};\n    wire        [15:0] cC   = {wf[5],  wf[4]};\n    // Kernel height and width.\n    wire [7:0] cKH = wf[6];\n    wire [7:0] cKW = wf[7];\n    // Dilation (rows, columns), stride (rows, columns), depth multiplier.\n    wire [7:0] cDH = wf[8];\n    wire [7:0] cDWD = wf[9];\n    wire [7:0] cSH = wf[10];\n    wire [7:0] cSW = wf[11];\n    wire [7:0] cDM = wf[12];\n    // Output pixels per row.\n    wire [15:0] cOW = {wf[14], wf[13]};\n    // Input row and column of the first window's top-left tap.\n    wire signed [15:0] cIY0 = {wf[16], wf[15]};\n    wire signed [15:0] cIX0 = {wf[18], wf[17]};\n    // X address of that tap (XBASE included).\n    wire signed [15:0] cORG = {wf[20], wf[19]};\n    // Byte steps: one output column, one output row, one kernel column, one kernel row.\n    wire [15:0] cSWC  = {wf[22], wf[21]};\n    wire [15:0] cSHWC = {wf[24], wf[23]};\n    wire [15:0] cKXS  = {wf[26], wf[25]};\n    wire [15:0] cKYS  = {wf[28], wf[27]};\n    // Bytes of image the job may touch.\n    wire [15:0] cXLEN = {wf[30], wf[29]};\n\n    // ---------------------------------------------------------------- status\n    // Engine running.\n    reg busy;\n    // Last job finished.\n    reg done;\n    // Last job failed (empty job or memory overrun).\n    reg err;\n    // Clock counter of the current / last job.\n    reg [31:0] cycles;\n    // STATUS byte.\n    assign status_o = {5'd0, err, done, busy};\n\n    // ---------------------------------------------------------------- sequencer registers\n    // Current state.\n    reg [3:0]  st;\n    // Vector index.\n    reg [15:0] vi;\n    // First output channel of the current group.\n    reg [15:0] oi;\n    // MAC issue counter.\n    reg [15:0] ki;\n    // Parameter byte counter.\n    reg [3:0]  pc;\n    // Start of the current vector in X.\n    reg [32:0] xvec;\n    // Start of the current group's X slice.\n    reg [32:0] xrow;\n    // Local weight row start of the current group (per bank).\n    reg [32:0] wrow;\n    // X read pointer during the dot product.\n    reg [32:0] xp;\n    // Local W read pointer during the dot product (same for every bank).\n    reg [32:0] wp;\n    // Local byte address of the current parameter record (same for every bank).\n    reg [32:0] pp;\n    // Output bytes scheduled so far (checked against the Y size before each group).\n    reg [32:0] ys;\n    // Queue mode: the current job comes from a descriptor.\n    reg        q_run;\n    // Descriptor being run.\n    reg [7:0]  qi;\n    // Descriptors finished in the last queue run.\n    reg [7:0]  qdone;\n    // Descriptor byte counter while loading.\n    reg [5:0]  ld;\n    // Descriptor RAM read data.\n    wire [7:0] d_q;\n    // Window generator state (HAS_WIN): row and column of the current tap, of the pixel's first tap, and the\n    // X address of the pixel (vbase), of its first row (vrow), of the current kernel column (xks) and row (xrs).\n    reg signed [15:0] iy, ix, iy0, ix0;\n    // (16 bits are enough: X is at most 4096 bytes and the arithmetic wraps like the address does.)\n    reg [15:0] vbase, vrow, xks, xrs;\n    // Channel inside a kernel tap, kernel column, output column in the row.\n    reg [15:0] wc;\n    reg [7:0]  wkx;\n    reg [15:0] wox;\n    // Depthwise: input channel offset of the current output channel and position inside its depth multiplier.\n    reg [15:0] icoff;\n    reg [7:0]  dmc;\n    // Pipeline stage 1 valid (RAM data available).\n    reg v1;\n    // Pipeline stage 2 valid (product available).\n    reg v2;\n\n    // ---------------------------------------------------------------- group geometry\n    // Dot length, zero-extended to the pointer width.\n    wire [32:0] k33  = {17'd0, cK};\n    // Weight bytes per output channel row: K, or ceil(K / 2) for 4-bit weights.\n    wire [32:0] kb33 = cW4p ? ((k33 + 33'd1) >> 1) : k33;\n    // Vector stride, zero-extended to the pointer width.\n    wire [32:0] xs33 = {17'd0, cXSTRIDE};\n    // Channels left in this vector.\n    wire [15:0] left = cN - oi;\n    // Channels in this group: one for depthwise, otherwise up to LANES.\n    wire [3:0]  cnt  = cDW ? 4'd1 : ((left < LANES) ? left[3:0] : LANES4);\n    // Lane of the first channel of the group (depthwise channels use lane o % LANES).\n    wire [2:0]  l0   = oi[2:0] & (LANES - 1);\n    // Output bytes of this group (four per channel in raw mode).\n    wire [32:0] gob  = cRAW ? {27'd0, cnt, 2'b00} : {29'd0, cnt};\n    // The window or the vector slice fits in X.\n    wire        x_ok = cWIN ? ({17'd0, cXBASE} + {17'd0, cXLEN} <= XSIZE) : (xrow + k33 <= XSIZE);\n    // The output goes to X or to Y.\n    wire        y_ok = (ys + gob <= (cOUTX ? XSIZE : YSIZE));\n    // The next group fits in every memory.\n    wire        fits = x_ok && (wrow + kb33 <= BWSIZE) && (pp + 33'd16 <= BPSIZE) && y_ok;\n    // Last group of a vector.\n    wire        last_o = ({1'b0, oi} + {13'd0, cnt} >= {1'b0, cN});\n    // Last vector of the job.\n    wire        last_v = (vi == cNVEC - 16'd1);\n\n    // ---------------------------------------------------------------- RAMs and lanes\n    // RAM read data of the X RAM and the Y RAM.\n    wire [7:0] x_q, y_q;\n    // Weight and parameter bytes of every bank, packed.\n    wire [8*LANES-1:0] w_q, p_q;\n    // Lane results: accumulators, multipliers, shifts, packed.\n    wire [32*LANES-1:0] acc_w, mult_w;\n    wire [8*LANES-1:0]  shift_w;\n    // Y write enable from the output unit.\n    reg        y_we;\n    // Y write address.\n    reg [YW-1:0] y_wa;\n    // Y write data.\n    reg [7:0]  y_wd;\n    // Bus write is allowed (engine idle).\n    wire bus_wr_ok = bus_wr & ~busy;\n    // Input byte plus the input offset (-255 .. 255), shared by all lanes.\n    wire signed [8:0]  xoff_r = $signed(x_q) + $signed(cINOFF[8:0]);\n    // Window tap outside the image (registered with the RAM read): it contributes zero.\n    reg pad1;\n    // The byte the lanes multiply.\n    wire signed [8:0]  xoff = pad1 ? 9'sd0 : xoff_r;\n    // The MAC pipeline advances while the lane controls below are valid.\n    wire par_en   = busy && (st == S_PAR) && (pc != 4'd0);\n    // Bias load strobe.\n    wire acc_init = (st == S_INIT);\n    // Parameter RAM read address (local, shared by all banks).\n    wire [32:0] p_ra = pp + ((st == S_CBL) ? {28'd0, ld[4:0]} : {29'd0, pc});\n\n    // Output address zero-extended so it can address X.\n    wire [11:0] y_wa12 = y_wa;\n    // This contains the instantiation for the X RAM (input vectors)\n    tmf_ram #(.AW(X_AW)) u_x (.clk(clk), .we((bus_wr_ok & sel_x) | (y_we & cOUTX)),\n                               .waddr((HAS_FUSE != 0 && busy) ? y_wa12[X_AW-1:0] : bus_addr[X_AW-1:0]),\n                               .wdata((HAS_FUSE != 0 && busy) ? y_wd : bus_wdata),\n                               .raddr(busy ? xp[X_AW-1:0] : bus_addr[X_AW-1:0]), .q(x_q));\n    // This contains the instantiation for the Y RAM (outputs)\n    tmf_ram #(.AW(Y_AW)) u_y (.clk(clk), .we(y_we & ~cOUTX), .waddr(y_wa12[Y_AW-1:0]), .wdata(y_wd),\n                               .raddr(bus_addr[Y_AW-1:0]), .q(y_q));\n\n    // Codebook table (HAS_CB): 16 int8 values.\n    reg [7:0] cbk [0:15];\n    // Rows per parameter bank of this job (the codebook record follows them in bank 0).\n    wire [15:0] cb_rows = (cN + (LANES - 1)) >> LB;\n    // The codebook record does not fit parameter bank 0.\n    wire cb_bad = cCB && ({1'b0, cPBASE} + {1'b0, cb_rows} + 17'd1 > (BPSIZE >> 4));\n    // Which nibble of the weight byte the lanes get (registered with the RAM read).\n    reg nsel;\n    always @(posedge clk) nsel <= ki[0];\n    // Tap outside the image (only in window mode).\n    wire pad_now = cWIN && (iy < 16'sd0 || iy >= cH || ix < 16'sd0 || ix >= cWW);\n    // Register it with the RAM read.\n    always @(posedge clk) pad1 <= pad_now && (st == S_DOT);\n\n    // Descriptor RAM (only with HAS_QUEUE).\n    generate\n        if (HAS_QUEUE != 0) begin : g_d\n            // This contains the instantiation for the descriptor RAM\n            tmf_ram #(.AW(D_AW)) u_d (.clk(clk), .we(bus_wr_ok & sel_d), .waddr(bus_addr[D_AW-1:0]), .wdata(bus_wdata),\n                                       .raddr(busy ? {qi[D_AW-7:0], ld} : bus_addr[D_AW-1:0]), .q(d_q));\n        end else begin : g_nod\n            // No queue: the descriptor window reads as zero.\n            assign d_q = 8'h00;\n        end\n    endgenerate\n\n    // One lane per output channel of a group: weight bank, parameter bank and MAC.\n    genvar gl;\n    generate\n        for (gl = 0; gl < LANES; gl = gl + 1) begin : lane\n            // This contains the instantiation for this lane's weight bank\n            tmf_ram #(.AW(WA)) u_w (.clk(clk), .we(bus_wr_ok & sel_w & (bank_w == gl)), .waddr(bus_addr[WA-1:0]),\n                                    .wdata(bus_wdata), .raddr(busy ? wp[WA-1:0] : bus_addr[WA-1:0]),\n                                    .q(w_q[8*gl +: 8]));\n            // This contains the instantiation for this lane's parameter bank\n            tmf_ram #(.AW(PA)) u_p (.clk(clk), .we(bus_wr_ok & sel_p & (bank_p == gl)), .waddr(bus_addr[PA-1:0]),\n                                    .wdata(bus_wdata),\n                                    .raddr(busy ? p_ra[PA-1:0] : bus_addr[PA-1:0]),\n                                    .q(p_q[8*gl +: 8]));\n            // The weight the MAC multiplies: the whole byte, or one sign-extended nibble.\n            wire [3:0] wnib = nsel ? w_q[8*gl+4 +: 4] : w_q[8*gl +: 4];\n            wire [7:0] wsel = cCB ? cbk[wnib] : cW4 ? {{4{wnib[3]}}, wnib} : w_q[8*gl +: 8];\n            // This contains the instantiation for this lane's MAC\n            tmf_lane u_lane (.clk(clk), .par_en(par_en), .p_byte(p_q[8*gl +: 8]), .acc_init(acc_init), .v1(v1), .v2(v2),\n                             .xoff(xoff), .w_byte(wsel), .acc_o(acc_w[32*gl +: 32]),\n                             .mult_o(mult_w[32*gl +: 32]), .shift_o(shift_w[8*gl +: 8]));\n        end\n    endgenerate\n\n    // ---------------------------------------------------------------- output unit (background requantiser)\n    // Group staging: accumulators, multipliers and shifts copied at hand-over.\n    reg [32*LANES-1:0] s_acc, s_mult;\n    reg [8*LANES-1:0]  s_shift;\n    // Output unit has a group to finish.\n    reg        sbusy;\n    // First lane of the staged group.\n    reg [2:0]  s_l0;\n    // Channels in the staged group.\n    reg [3:0]  s_cnt;\n    // Channels issued to the requantiser (or raw channels completed).\n    reg [3:0]  s_iss;\n    // Results written.\n    reg [3:0]  s_wr;\n    // Raw byte counter.\n    reg [1:0]  raw_b;\n    // Y write pointer (bytes).\n    reg [32:0] wy;\n    // The job's registers are being initialised this clock (valid config).\n    wire job_init = (st == S_JSTART) && !(cK == 16'd0 || cN == 16'd0 || cNVEC == 16'd0);\n    // Hand-over of a finished group to the output unit.\n    wire do_hand = (st == S_DRAIN) && !v1 && !v2 && !sbusy;\n    // Lane being issued.\n    wire [2:0] s_lane = s_l0 + s_iss[2:0];\n    // Requantiser interface.\n    wire        rq_ready, rq_done;\n    wire [7:0]  rq_y;\n    // Issue the next staged channel into the requantiser.\n    wire        rq_start = sbusy && !cRAW && (s_iss < s_cnt) && rq_ready;\n\n    // Operands of the staged channel being issued.\n    wire signed [31:0] rq_acc  = s_acc[32*s_lane +: 32];\n    wire        [31:0] rq_mult = s_mult[32*s_lane +: 32];\n    wire signed [7:0]  rq_sh   = s_shift[8*s_lane +: 8];\n\n    // This contains the instantiation for the requantiser\n    tmf_rq #(.MODE(RQ_MODE)) u_rq (.clk(clk), .rst(rst), .start(rq_start), .acc(rq_acc), .mult(rq_mult), .shift(rq_sh),\n                                   .zp(cZP), .act_min(cAMIN), .act_max(cAMAX), .ready(rq_ready), .done(rq_done), .y(rq_y));\n\n    // Output unit: requantise or copy staged accumulators and write Y, one channel after another.\n    always @(posedge clk) begin\n        // Y write strobe defaults low.\n        y_we <= 1'b0;\n        // Reset empties the unit.\n        if (rst) begin\n            // Nothing staged.\n            sbusy <= 1'b0;\n        end else if (do_hand) begin\n            // Take over the group staged this clock.\n            sbusy <= 1'b1;\n            // Remember the first lane.\n            s_l0  <= l0;\n            // And how many channels.\n            s_cnt <= cnt;\n            // Nothing issued yet.\n            s_iss <= 4'd0;\n            // Nothing written yet.\n            s_wr  <= 4'd0;\n            // First raw byte.\n            raw_b <= 2'd0;\n        end else if (sbusy) begin\n            // Raw mode: write the four bytes of each accumulator, one per clock.\n            if (cRAW) begin\n                // Write strobe.\n                y_we  <= 1'b1;\n                // At the output pointer.\n                y_wa  <= wy[YW-1:0];\n                // Byte raw_b of the current lane's accumulator.\n                y_wd  <= s_acc[32*s_lane + 8*raw_b +: 8];\n                // Advance the output pointer.\n                wy    <= wy + 33'd1;\n                // Next byte.\n                raw_b <= raw_b + 2'd1;\n                // After byte 3 the channel is complete.\n                if (raw_b == 2'd3) begin\n                    // Next channel.\n                    s_iss <= s_iss + 4'd1;\n                    // Last channel: the unit is free after this write.\n                    if (s_iss == s_cnt - 4'd1) sbusy <= 1'b0;\n                end\n            end else begin\n                // Count issues (the start pulse itself is the combinational rq_start).\n                if (rq_start) s_iss <= s_iss + 4'd1;\n                // A requantised byte arrives: write it.\n                if (rq_done) begin\n                    // Write strobe.\n                    y_we  <= 1'b1;\n                    // At the output pointer.\n                    y_wa  <= wy[YW-1:0];\n                    // Result byte.\n                    y_wd  <= rq_y;\n                    // Advance the output pointer.\n                    wy    <= wy + 33'd1;\n                    // One more result.\n                    s_wr  <= s_wr + 4'd1;\n                    // Last result of the group: the unit is free after this write.\n                    if (s_wr == s_cnt - 4'd1) sbusy <= 1'b0;\n                end\n            end\n        end\n        // Job set-up rewinds the output pointer to the job's Y base.\n        if (job_init) wy <= {17'd0, cYBASE};\n    end\n\n    // Staging registers capture the lanes at hand-over.\n    always @(posedge clk) begin\n        // Copy accumulators, multipliers and shifts.\n        if (do_hand) begin\n            // Accumulators.\n            s_acc   <= acc_w;\n            // Multipliers.\n            s_mult  <= mult_w;\n            // Shifts.\n            s_shift <= shift_w;\n        end\n    end\n\n    // ---------------------------------------------------------------- performance counters\n    // Clocks spent issuing multiply-accumulates, clocks waited for the output unit, output bytes, finished jobs.\n    reg [31:0] p_mac, p_stall, p_out, p_jobs;\n    // The four counters packed for the bus read mux (zero without HAS_PERF).\n    wire [127:0] perf_bus = (HAS_PERF != 0) ? {p_jobs, p_out, p_stall, p_mac} : 128'd0;\n    // CTRL register write strobe.\n    wire ctl_wr = bus_wr && sel_reg && bus_addr[7:0] == 8'h1F;\n\n    // Counters: cleared by a start command, counting while the engine works.\n    always @(posedge clk) begin\n        // Only built with HAS_PERF.\n        if (HAS_PERF != 0) begin\n            // A start command from idle clears them.\n            if (st == S_IDLE && ctl_wr && (bus_wdata[0] || bus_wdata[1])) begin\n                // Clear.\n                p_mac <= 32'd0; p_stall <= 32'd0; p_out <= 32'd0; p_jobs <= 32'd0;\n            end else begin\n                // A multiply-accumulate address is issued.\n                if (st == S_DOT) p_mac <= p_mac + 32'd1;\n                // The group is complete but the output unit is still busy with the previous one.\n                if (st == S_DRAIN && !v1 && !v2 && sbusy) p_stall <= p_stall + 32'd1;\n                // One byte written to Y.\n                if (y_we) p_out <= p_out + 32'd1;\n                // A job completes.\n                if (st == S_FIN && !sbusy) p_jobs <= p_jobs + 32'd1;\n            end\n        end\n    end\n\n    // ---------------------------------------------------------------- bus read mux\n    // Read data: registers combinationally, memories from their registered outputs.\n    always @* begin\n        // Default for unmapped addresses.\n        bus_rdata = 8'h00;\n        // Config read-back (the window block is write-only: it reads as zero).\n        if (cfg_hit && !win_reg) bus_rdata = cfg[cfg_idx];\n        // Descriptor count.\n        if (sel_reg && bus_addr[7:0] == 8'h18) bus_rdata = cQCNT;\n        // Descriptors finished in the last queue run.\n        if (sel_reg && bus_addr[7:0] == 8'h19) bus_rdata = qdone;\n        // STATUS.\n        if (sel_reg && bus_addr[7:0] == 8'h20) bus_rdata = status_o;\n        // CYCLES byte 0.\n        if (sel_reg && bus_addr[7:0] == 8'h21) bus_rdata = cycles[7:0];\n        // CYCLES byte 1.\n        if (sel_reg && bus_addr[7:0] == 8'h22) bus_rdata = cycles[15:8];\n        // CYCLES byte 2.\n        if (sel_reg && bus_addr[7:0] == 8'h23) bus_rdata = cycles[23:16];\n        // CYCLES byte 3.\n        if (sel_reg && bus_addr[7:0] == 8'h24) bus_rdata = cycles[31:24];\n        // MAGIC.\n        if (sel_reg && bus_addr[7:0] == 8'h30) bus_rdata = 8'h4D;\n        // VERSION.\n        if (sel_reg && bus_addr[7:0] == 8'h31) bus_rdata = 8'h02;\n        // W address width.\n        if (sel_reg && bus_addr[7:0] == 8'h32) bus_rdata = W_AW;\n        // X address width.\n        if (sel_reg && bus_addr[7:0] == 8'h33) bus_rdata = X_AW;\n        // Y address width.\n        if (sel_reg && bus_addr[7:0] == 8'h34) bus_rdata = Y_AW;\n        // P address width.\n        if (sel_reg && bus_addr[7:0] == 8'h35) bus_rdata = P_AW;\n        // Lanes.\n        if (sel_reg && bus_addr[7:0] == 8'h36) bus_rdata = LANES;\n        // Feature bits.\n        if (sel_reg && bus_addr[7:0] == 8'h37) bus_rdata = FEATURES;\n        // Descriptor RAM address width (0 without a queue).\n        if (sel_reg && bus_addr[7:0] == 8'h38) bus_rdata = (HAS_QUEUE != 0) ? D_AW : 0;\n        // Performance counters, little endian: MAC, STALL, OUT, JOBS.\n        if (sel_reg && bus_addr[7:4] == 4'h6) bus_rdata = perf_bus[8*bus_addr[3:0] +: 8];\n        // D window.\n        if (sel_d) bus_rdata = d_q;\n        // X window.\n        if (sel_x) bus_rdata = x_q;\n        // Y window.\n        if (sel_y) bus_rdata = y_q;\n        // P window: the addressed bank.\n        if (sel_p) bus_rdata = p_q[8*bank_p +: 8];\n        // W window: the addressed bank.\n        if (sel_w) bus_rdata = w_q[8*bank_w +: 8];\n    end\n\n    // ---------------------------------------------------------------- config writes\n    // Loop index for the register reset.\n    integer i;\n    // A descriptor byte is being written this clock (it arrives one clock after its address).\n    wire        ld_we = (HAS_QUEUE != 0) && (st == S_LD) && (ld != 6'd0);\n    // Single write port of the config file: a descriptor load or a bus write.\n    wire        cw_en = ld_we | (bus_wr_ok & cfg_hit);\n    // Index written.\n    wire [5:0]  cw_ix = ld_we ? (ld - 6'd1) : cfg_idx;\n    // Data written.\n    wire [7:0]  cw_d  = ld_we ? d_q : bus_wdata;\n    // Config register file: bus writes when idle, descriptor loads while a queue runs.\n    always @(posedge clk) begin\n        // Reset clears every config byte.\n        if (rst) begin\n            // Clear all bytes.\n            for (i = 0; i < NCFG; i = i + 1) cfg[i] <= 8'h00;\n            // And the descriptor count.\n            cQCNT <= 8'd0;\n        end else begin\n            // Store the addressed config byte.\n            if (cw_en) cfg[cw_ix] <= cw_d;\n            // Store the descriptor count.\n            if (bus_wr_ok && sel_reg && bus_addr[7:0] == 8'h18) cQCNT <= bus_wdata;\n        end\n    end\n\n    // ---------------------------------------------------------------- MAC pipeline control\n    // Stage valid bits follow the issue of RAM addresses.\n    always @(posedge clk) begin\n        // Stage 2 valid follows stage 1.\n        v2 <= v1;\n        // Stage 1 valid: an address was issued this clock.\n        v1 <= (st == S_DOT);\n    end\n\n    // ---------------------------------------------------------------- sequencer\n    // Job control: start, per-group loop, bounds checks, status.\n    always @(posedge clk) begin\n        // Count clocks while busy.\n        if (busy) cycles <= cycles + 32'd1;\n        // Reset to idle with clear status.\n        if (rst) begin\n            // Idle state.\n            st   <= S_IDLE;\n            // Not busy.\n            busy <= 1'b0;\n            // No result.\n            done <= 1'b0;\n            // No error.\n            err  <= 1'b0;\n        end else begin\n            // A start while a job is running is a driver bug: flag it (the running job continues).\n            if (ctl_wr && (bus_wdata[0] || bus_wdata[1]) && busy) err <= 1'b1;\n            // Clear-status command from the bus (only meaningful when idle).\n            if (ctl_wr && bus_wdata[7] && !busy) begin\n                // Clear done.\n                done <= 1'b0;\n                // Clear error.\n                err  <= 1'b0;\n            end\n            // State dispatch.\n            case (st)\n                // Wait for CTRL.start (0x01 single job, 0x02 descriptor queue).\n                S_IDLE: if (ctl_wr && bus_wdata[0]) begin\n                    // Running.\n                    busy   <= 1'b1;\n                    // New job: clear status.\n                    done   <= 1'b0;\n                    // No error yet.\n                    err    <= 1'b0;\n                    // Restart the clock counter.\n                    cycles <= 32'd0;\n                    // The job comes from the config registers.\n                    q_run  <= 1'b0;\n                    // Validate and set up.\n                    st     <= S_JSTART;\n                end else if (HAS_QUEUE != 0 && ctl_wr && bus_wdata[1]) begin\n                    // Nothing to run, or more descriptors than fit in D: error at once.\n                    if (cQCNT == 8'd0 || {19'd0, cQCNT, 6'd0} > DSIZE) begin\n                        // Flag the error.\n                        err  <= 1'b1;\n                        // And finish.\n                        done <= 1'b1;\n                    end else begin\n                        // Running.\n                        busy   <= 1'b1;\n                        // New run: clear status.\n                        done   <= 1'b0;\n                        // No error yet.\n                        err    <= 1'b0;\n                        // Restart the clock counter.\n                        cycles <= 32'd0;\n                        // Jobs come from descriptors.\n                        q_run  <= 1'b1;\n                        // First descriptor.\n                        qi     <= 8'd0;\n                        // None finished yet.\n                        qdone  <= 8'd0;\n                        // Start loading its bytes.\n                        ld     <= 6'd0;\n                        // Load.\n                        st     <= S_LD;\n                    end\n                end\n                // Copy the descriptor into the config registers (the config RAM write is in the config block).\n                S_LD: begin\n                    // Next byte (the address of byte n is issued in the clock with ld == n).\n                    ld <= ld + 6'd1;\n                    // The last byte is written in the clock with ld == NCFG.\n                    if (ld == NCFG) st <= S_JSTART;\n                end\n                // Validate the config and set up the job registers.\n                S_JSTART: begin\n                    // Empty job: error and done at once.\n                    if (cK == 16'd0 || cN == 16'd0 || cNVEC == 16'd0) begin\n                        // Flag the error.\n                        err  <= 1'b1;\n                        // Finished.\n                        done <= 1'b1;\n                        // Not running.\n                        busy <= 1'b0;\n                        // Idle.\n                        st   <= S_IDLE;\n                    end else begin\n                        // First vector.\n                        vi     <= 16'd0;\n                        // First channel.\n                        oi     <= 16'd0;\n                        // First vector starts at the X base.\n                        xvec   <= {17'd0, cXBASE};\n                        // First group's X slice.\n                        xrow   <= {17'd0, cXBASE};\n                        // First weight row.\n                        wrow   <= {17'd0, cWBASE};\n                        // First parameter record (16 bytes per channel).\n                        pp     <= {13'd0, cPBASE, 4'd0};\n                        // Output scheduling starts at the Y base.\n                        ys     <= {17'd0, cYBASE};\n                        // Window mode: first pixel.\n                        if (cWIN) begin\n                            // X address of its first tap.\n                            vbase <= cORG;\n                            vrow  <= cORG;\n                            // Its image row and column.\n                            iy0   <= cIY0;\n                            ix0   <= cIX0;\n                            // First output column.\n                            wox   <= 16'd0;\n                            // First depthwise channel.\n                            icoff <= 16'd0;\n                            dmc   <= 8'd0;\n                        end\n                        // Codebook jobs load their table first (its record follows the job's parameter records).\n                        pp     <= cCB ? {13'd0, cPBASE + cb_rows, 4'd0} : {13'd0, cPBASE, 4'd0};\n                        // Counter for the table load.\n                        ld     <= 6'd0;\n                        // Check bounds first (a codebook that does not fit is an error).\n                        st     <= cb_bad ? S_ERRW : (cCB ? S_CBL : S_CHK);\n                    end\n                end\n                // Read the 16 codebook bytes (the byte addressed in clock n arrives in clock n+1).\n                S_CBL: begin\n                    // Next byte.\n                    ld <= ld + 6'd1;\n                    // Store the byte requested in the previous clock.\n                    if (ld != 6'd0) cbk[ld[3:0] - 4'd1] <= p_q[7:0];\n                    // After the last byte the job's own parameter records are addressed again.\n                    if (ld == 6'd16) begin\n                        // Back to the first parameter record.\n                        pp <= {13'd0, cPBASE, 4'd0};\n                        // Check bounds.\n                        st <= S_CHK;\n                    end\n                end\n                // Every memory access of this group must be in range.\n                S_CHK: begin\n                    // Out of range: stop with an error once the output unit is idle.\n                    if (!fits) begin\n                        // Wait, then report.\n                        st <= S_ERRW;\n                    end else begin\n                        // Fetch the parameters.\n                        pc <= 4'd0;\n                        // Next state.\n                        st <= S_PAR;\n                    end\n                end\n                // Read 9 parameter bytes per lane; the byte addressed in clock n arrives in clock n+1.\n                S_PAR: begin\n                    // Next byte (the lanes shift it in through par_en).\n                    pc <= pc + 4'd1;\n                    // After the 9th byte is captured, load the operands.\n                    if (pc == 4'd9) st <= S_INIT;\n                end\n                // Load the operands and start the dot product.\n                S_INIT: begin\n                    // X read pointer.\n                    xp  <= cWIN ? {17'd0, vbase + icoff} : xrow;\n                    // Window generator: first tap of the pixel.\n                    if (cWIN) begin\n                        xks <= vbase + icoff;\n                        xrs <= vbase + icoff;\n                        iy  <= iy0;\n                        ix  <= ix0;\n                        wc  <= 16'd0;\n                        wkx <= 8'd0;\n                    end\n                    // W read pointer.\n                    wp  <= wrow;\n                    // MAC counter.\n                    ki  <= 16'd0;\n                    // Go (the lanes load their biases through acc_init).\n                    st  <= S_DOT;\n                end\n                // One RAM read per clock; the lanes add the products.\n                S_DOT: begin\n                    // Next X byte: the next channel, kernel column or kernel row of the window, or the next byte.\n                    if (!cWIN) begin\n                        // Plain vectors.\n                        xp <= xp + 33'd1;\n                    end else if (!cDW && wc != cC - 16'd1) begin\n                        // Next channel of this tap.\n                        wc <= wc + 16'd1;\n                        xp <= xp + 33'd1;\n                    end else if (wkx != cKW - 8'd1) begin\n                        // Next kernel column.\n                        wc  <= 16'd0;\n                        wkx <= wkx + 8'd1;\n                        ix  <= ix + $signed({8'd0, cDWD});\n                        xks <= xks + cKXS;\n                        xp  <= {17'd0, xks + cKXS};\n                    end else begin\n                        // Next kernel row.\n                        wc  <= 16'd0;\n                        wkx <= 8'd0;\n                        ix  <= ix0;\n                        iy  <= iy + $signed({8'd0, cDH});\n                        xrs <= xrs + cKYS;\n                        xks <= xrs + cKYS;\n                        xp  <= {17'd0, xrs + cKYS};\n                    end\n                    // Next W byte (4-bit weights: every second clock).\n                    wp <= wp + (cW4p ? {32'd0, ki[0]} : 33'd1);\n                    // Count the issue.\n                    ki <= ki + 16'd1;\n                    // Last issue: wait for the pipeline.\n                    if (ki == cK - 16'd1) st <= S_DRAIN;\n                end\n                // Pipeline empties two clocks after the last issue; then the group goes to the output unit.\n                S_DRAIN: if (do_hand) begin\n                    // The group's output bytes are now scheduled.\n                    ys <= ys + gob;\n                    // Move on.\n                    st <= S_NEXT;\n                end\n                // Step to the next group / vector, or finish.\n                S_NEXT: begin\n                    // Last group of this vector.\n                    if (last_o) begin\n                        // Last vector too: the job is complete once the output unit is empty.\n                        if (last_v) begin\n                            // Wait for the output unit.\n                            st <= S_FIN;\n                        end else begin\n                            // Next vector.\n                            vi   <= vi + 16'd1;\n                            // First channel again.\n                            oi   <= 16'd0;\n                            // Window mode: next output pixel (right, or the start of the next row).\n                            if (cWIN) begin\n                                // Depthwise channel counters restart.\n                                icoff <= 16'd0;\n                                dmc   <= 8'd0;\n                                // Last column: down by the row stride.\n                                if (wox == cOW - 16'd1) begin\n                                    wox   <= 16'd0;\n                                    iy0   <= iy0 + $signed({8'd0, cSH});\n                                    ix0   <= cIX0;\n                                    vrow  <= vrow + cSHWC;\n                                    vbase <= vrow + cSHWC;\n                                end else begin\n                                    wox   <= wox + 16'd1;\n                                    ix0   <= ix0 + $signed({8'd0, cSW});\n                                    vbase <= vbase + cSWC;\n                                end\n                            end\n                            // Next vector start.\n                            xvec <= xvec + xs33;\n                            // Its first slice.\n                            xrow <= xvec + xs33;\n                            // Back to the first weight row.\n                            wrow <= {17'd0, cWBASE};\n                            // Back to the first parameter record.\n                            pp   <= {13'd0, cPBASE, 4'd0};\n                            // Check the new group.\n                            st   <= S_CHK;\n                        end\n                    end else begin\n                        // Next group.\n                        oi <= oi + {12'd0, cnt};\n                        // Depthwise: next channel has its own X slice.\n                        if (cDW) xrow <= xrow + k33;\n                        // Window depthwise: next input channel after DM output channels.\n                        if (cWIN && cDW) begin\n                            // Depth multiplier exhausted.\n                            if (dmc == cDM - 8'd1) begin\n                                dmc   <= 8'd0;\n                                icoff <= icoff + 16'd1;\n                            end else begin\n                                dmc <= dmc + 8'd1;\n                            end\n                        end\n                        // Local row advances after the last lane of a bank row (always for non-depthwise groups).\n                        if (!cDW || ((oi[2:0] & (LANES - 1)) == (LANES - 1))) begin\n                            // Next weight row.\n                            wrow <= wrow + kb33;\n                            // Next parameter record.\n                            pp   <= pp + 33'd16;\n                        end\n                        // Check the new group.\n                        st <= S_CHK;\n                    end\n                end\n                // Wait for the last results to be written, then finish (or load the next descriptor).\n                S_FIN: if (!sbusy) begin\n                    // Another descriptor to run.\n                    if (q_run && ({1'b0, qi} + 9'd1 < {1'b0, cQCNT})) begin\n                        // Count the finished one.\n                        qdone <= qdone + 8'd1;\n                        // Select the next.\n                        qi    <= qi + 8'd1;\n                        // Start loading its bytes.\n                        ld    <= 6'd0;\n                        // Load.\n                        st    <= S_LD;\n                    end else begin\n                        // Count the finished one.\n                        if (q_run) qdone <= qdone + 8'd1;\n                        // Done.\n                        done <= 1'b1;\n                        // Not running.\n                        busy <= 1'b0;\n                        // Idle.\n                        st   <= S_IDLE;\n                    end\n                end\n                // Error exit after the output unit has drained.\n                S_ERRW: if (!sbusy) begin\n                    // Flag.\n                    err  <= 1'b1;\n                    // Finished.\n                    done <= 1'b1;\n                    // Not running.\n                    busy <= 1'b0;\n                    // Idle.\n                    st   <= S_IDLE;\n                end\n                // Unused encodings recover to idle.\n                default: st <= S_IDLE;\n            endcase\n        end\n    end\n\nendmodule\n\n`default_nettype wire\n",
+  "tmf_lane.v": "// tmf_lane.v - one MAC lane of the engine: parameter shift register, multiply stage and accumulator.\n// Several lanes work on consecutive output channels at once. All lanes see the same input byte (the\n// engine's X stream) and each reads its own weight byte and its own parameter bytes from its RAM bank.\n// The multiply is 3-stage pipelined together with the RAM read (stage 1 = RAM output, 2 = product, 3 = accumulate).\n\n`default_nettype none\n\nmodule tmf_lane (\n    input  wire               clk,      // clock\n    input  wire               par_en,   // shift one parameter byte in (LSB first)\n    input  wire        [7:0]  p_byte,   // parameter byte from this lane's P bank\n    input  wire               acc_init, // load the accumulator with the bias\n    input  wire               v1,       // pipeline stage 1 valid: RAM data available\n    input  wire               v2,       // pipeline stage 2 valid: product available\n    input  wire signed [8:0]  xoff,     // input byte plus the input offset (shared by all lanes)\n    input  wire        [7:0]  w_byte,   // weight byte from this lane's W bank\n    output wire signed [31:0] acc_o,    // accumulator\n    output wire        [31:0] mult_o,   // fixed-point multiplier of the channel\n    output wire        [7:0]  shift_o   // shift of the channel\n);\n\n    // Parameter bytes, shifted in LSB first: bias[31:0], mult[63:32], shift[71:64].\n    reg  [71:0]        par;\n    // Accumulator.\n    reg  signed [31:0] acc;\n    // Pipeline product register.\n    reg  signed [17:0] prod;\n    // Signed 9 x 8 product.\n    wire signed [16:0] mul = xoff * $signed(w_byte);\n\n    // Outputs.\n    assign acc_o   = acc;\n    assign mult_o  = par[63:32];\n    assign shift_o = par[71:64];\n\n    // Lane datapath: parameter capture, product, accumulation.\n    always @(posedge clk) begin\n        // Shift the addressed parameter byte in.\n        if (par_en)   par  <= {p_byte, par[71:8]};\n        // Stage 2: (x + in_off) * w.\n        if (v1)       prod <= {mul[16], mul};\n        // Stage 3: accumulate the product.\n        if (v2)       acc  <= acc + {{14{prod[17]}}, prod};\n        // Start every output from its bias (never overlaps v2).\n        if (acc_init) acc  <= par[31:0];\n    end\n\nendmodule\n\n`default_nettype wire\n",
+  "tmf_ram.v": "// tmf_ram.v - simple dual-port byte RAM with a registered read port.\n// One write port and one read port on the same clock, written in the standard style that FPGA\n// synthesis tools infer as block RAM. Read data appears one clock after the read address.\n\n`default_nettype none\n\nmodule tmf_ram #(\n    parameter AW = 10                 // address width: depth is 2^AW bytes\n) (\n    input  wire          clk,         // clock for both ports\n    input  wire          we,          // write enable\n    input  wire [AW-1:0] waddr,       // write address\n    input  wire [7:0]    wdata,       // write data\n    input  wire [AW-1:0] raddr,       // read address\n    output reg  [7:0]    q            // read data, registered (valid one clock after raddr)\n);\n\n    // Storage array.\n    reg [7:0] mem [0:(1<<AW)-1];\n\n    // RAM process: synchronous write and synchronous read.\n    always @(posedge clk) begin\n        // Store the write byte when enabled.\n        if (we) mem[waddr] <= wdata;\n        // Register the byte at the read address.\n        q <= mem[raddr];\n    end\n\nendmodule\n\n`default_nettype wire\n",
+  "tmf_requant.v": "// tmf_requant.v - exact TFLite int8 requantisation, sequential (no hardware multiplier needed).\n//   y = clamp( ((acc * mult + 2^(ts-1)) >>> ts) + zp , act_min, act_max ),   ts = 31 - shift\n// This is TFLite's single-rounding MultiplyByQuantizedMultiplier, bit-exact with LiteRT.\n// The 32x31 multiply is shift-and-add (32 clocks); the variable right shift is done in steps of\n// 8 and then 1 bit (at most 7 + 7 clocks). One 64-bit adder is shared by the multiply, the rounding\n// constant and the zero point. Clocks from start to done: 1 + 32 + 1 + (ts/8 + ts%8 + 1) + 1 + 1.\n\n`default_nettype none\n\nmodule tmf_requant (\n    input  wire               clk,      // clock\n    input  wire               rst,      // synchronous reset, active high\n    input  wire               start,    // one-clock pulse: latch the inputs and begin\n    input  wire signed [31:0] acc,      // int32 accumulator\n    input  wire        [31:0] mult,     // fixed-point multiplier (0 .. 2^31-1)\n    input  wire signed [7:0]  shift,    // TFLite shift (-31 .. 30)\n    input  wire signed [7:0]  zp,       // output zero point\n    input  wire signed [7:0]  act_min,  // clamp low\n    input  wire signed [7:0]  act_max,  // clamp high\n    output wire               ready,    // 1 while idle: a new operand set can be started\n    output reg                done,     // one-clock pulse: y is valid\n    output reg  signed [7:0]  y         // int8 result\n);\n\n    // Phase encodings.\n    localparam [2:0] P_IDLE = 3'd0;     // waiting for start\n    localparam [2:0] P_MUL  = 3'd1;     // shift-and-add multiply\n    localparam [2:0] P_RND  = 3'd2;     // add the rounding constant\n    localparam [2:0] P_SHR  = 3'd3;     // arithmetic right shift by ts\n    localparam [2:0] P_ZP   = 3'd4;     // add the zero point\n    localparam [2:0] P_OUT  = 3'd5;     // clamp, report\n\n    // Current phase.\n    reg [2:0]         ph;\n    // Ready for a new start while idle.\n    assign ready = (ph == P_IDLE);\n    // Running 64-bit product / sum.\n    reg signed [63:0] p;\n    // Multiplicand, shifted left each step (sign-extended accumulator).\n    reg signed [63:0] mc;\n    // Multiplier bits still to consume.\n    reg [31:0]        ml;\n    // Multiply step counter.\n    reg [5:0]         n;\n    // Remaining right-shift distance.\n    reg [6:0]         ts;\n    // Latched zero point and clamp limits.\n    reg signed [7:0]  zp_q, lo_q, hi_q;\n    // Second adder operand: multiplicand (multiply), rounding constant, or zero point.\n    wire signed [63:0] addend = (ph == P_MUL) ? (ml[0] ? mc : 64'sd0)\n                              : (ph == P_RND) ? (64'sd1 <<< (ts - 7'd1))\n                              :                 $signed({{56{zp_q[7]}}, zp_q});\n    // The one shared 64-bit adder.\n    wire signed [63:0] sum = p + addend;\n    // p fits in int8 (bits 63..7 all equal the sign).\n    wire               fits8 = (p[63:7] == {57{p[63]}});\n    // Clamp test inside int8: below the low limit.\n    wire               below = $signed(p[7:0]) < lo_q;\n    // Clamp test inside int8: above the high limit.\n    wire               above = $signed(p[7:0]) > hi_q;\n\n    // Requantiser sequencer: one phase step per clock.\n    always @(posedge clk) begin\n        // done is a single-clock pulse by default.\n        done <= 1'b0;\n        // Reset returns to idle.\n        if (rst) begin\n            // Idle phase.\n            ph <= P_IDLE;\n        end else begin\n            // Phase dispatch.\n            case (ph)\n                // Wait for a start pulse and latch the operands.\n                P_IDLE: if (start) begin\n                    // Clear the product.\n                    p    <= 64'sd0;\n                    // Sign-extended multiplicand.\n                    mc   <= {{32{acc[31]}}, acc};\n                    // Multiplier bits.\n                    ml   <= mult;\n                    // 32 multiply steps.\n                    n    <= 6'd0;\n                    // Total right shift 31 - shift (1 .. 62).\n                    ts   <= 7'd31 - {{1{shift[7]}}, shift[5:0]};\n                    // Keep the output parameters.\n                    zp_q <= zp;\n                    // Keep the clamp low limit.\n                    lo_q <= act_min;\n                    // Keep the clamp high limit.\n                    hi_q <= act_max;\n                    // Start multiplying.\n                    ph   <= P_MUL;\n                end\n                // One multiplier bit per clock.\n                P_MUL: begin\n                    // Add the shifted multiplicand where the multiplier bit is 1 (addend is 0 otherwise).\n                    p  <= sum;\n                    // Next multiplicand weight.\n                    mc <= mc <<< 1;\n                    // Next multiplier bit.\n                    ml <= ml >> 1;\n                    // Count the step.\n                    n  <= n + 6'd1;\n                    // After 32 steps the product is complete.\n                    if (n == 6'd31) ph <= P_RND;\n                end\n                // Rounding: add 2^(ts-1).\n                P_RND: begin\n                    // Half of the output step.\n                    p  <= sum;\n                    // Shift next.\n                    ph <= P_SHR;\n                end\n                // Arithmetic right shift, 8 bits at a time while possible, then 1 bit.\n                P_SHR: begin\n                    // Big steps first.\n                    if (ts >= 7'd8) begin\n                        // Shift by 8.\n                        p  <= p >>> 8;\n                        // 8 fewer to go.\n                        ts <= ts - 7'd8;\n                    end else if (ts != 7'd0) begin\n                        // Shift by 1.\n                        p  <= p >>> 1;\n                        // One fewer to go.\n                        ts <= ts - 7'd1;\n                    end else begin\n                        // Shift finished.\n                        ph <= P_ZP;\n                    end\n                end\n                // Add the output zero point.\n                P_ZP: begin\n                    // p + zp.\n                    p  <= sum;\n                    // Clamp next.\n                    ph <= P_OUT;\n                end\n                // Clamp and report: outside int8 the sign decides, inside compare 8-bit values.\n                P_OUT: begin\n                    // Far below or below the low limit.\n                    if ((!fits8 && p[63]) || (fits8 && below))       y <= lo_q;\n                    // Far above or above the high limit.\n                    else if ((!fits8 && !p[63]) || (fits8 && above)) y <= hi_q;\n                    // In range.\n                    else                                              y <= p[7:0];\n                    // Result valid next clock.\n                    done <= 1'b1;\n                    // Back to idle.\n                    ph   <= P_IDLE;\n                end\n                // Unused encodings recover to idle.\n                default: ph <= P_IDLE;\n            endcase\n        end\n    end\n\nendmodule\n\n`default_nettype wire\n",
+  "tmf_requant_pipe.v": "// tmf_requant_pipe.v - exact TFLite int8 requantisation, fully pipelined (one result per clock).\n//   y = clamp( ((acc * mult + 2^(ts-1)) >>> ts) + zp , act_min, act_max ),   ts = 31 - shift\n// Same function as tmf_requant.v (bit-exact), but built from four unsigned 16x16 multipliers and a two-step\n// barrel shifter, so a new operand set can enter every clock. Latency is LAT clocks from start to done.\n// Use it when several output lanes finish together (LANES > 1) or the layers are short.\n// The sign is handled separately: |acc| * mult is formed from unsigned 16-bit halves,\n//   |acc| = ah*2^16 + al, mult = mh*2^16 + ml:   |acc|*mult = ah*mh*2^32 + (ah*ml + al*mh)*2^16 + al*ml,\n// then negated again if acc was negative, so every multiplier is a plain unsigned 16x16 (one DSP block).\n\n`default_nettype none\n\nmodule tmf_requant_pipe (\n    input  wire               clk,      // clock\n    input  wire               rst,      // synchronous reset, active high\n    input  wire               start,    // operands valid this clock (one operand set per clock is accepted)\n    input  wire signed [31:0] acc,      // int32 accumulator\n    input  wire        [31:0] mult,     // fixed-point multiplier (0 .. 2^31-1)\n    input  wire signed [7:0]  shift,    // TFLite shift (-31 .. 30)\n    input  wire signed [7:0]  zp,       // output zero point\n    input  wire signed [7:0]  act_min,  // clamp low\n    input  wire signed [7:0]  act_max,  // clamp high\n    output wire               ready,    // always 1: a new operand set can enter every clock\n    output reg                done,     // result valid this clock\n    output reg  signed [7:0]  y         // int8 result\n);\n\n    // Number of clocks between start and done.\n    localparam LAT = 10;\n\n    // The unit never stalls.\n    assign ready = 1'b1;\n\n    // Side data per operand set: {ts[6:0], zp, act_min, act_max}, carried down the pipeline.\n    reg [30:0] sd [1:9];\n    // Valid bits, one per stage 1..9.\n    reg [8:0]  v;\n    // Right-shift distance 31 - shift (1 .. 62), as in tmf_requant.v.\n    wire [6:0] ts_c = 7'd31 - {{1{shift[7]}}, shift[5:0]};\n\n    // Stage 1: magnitude and sign of the accumulator, multiplier.\n    reg        [31:0] a1;\n    reg        [31:0] m1;\n    reg               sg1;\n    // Stage 2: the four unsigned partial products.\n    reg        [31:0] pa2, pb2, pc2, pd2;\n    reg               sg2;\n    // Stage 3: middle products added.\n    reg        [32:0] m3;\n    reg        [31:0] pa3, pd3;\n    reg               sg3;\n    // Stage 4: low and middle parts combined.\n    reg        [63:0] t4;\n    reg        [31:0] pd4;\n    reg               sg4;\n    // Stage 5: full magnitude product.\n    reg        [63:0] p5;\n    reg               sg5;\n    // Stage 6: product with its sign restored.\n    reg signed [63:0] q6;\n    // Stage 7: plus the rounding constant 2^(ts-1).\n    reg signed [63:0] r7;\n    // Stage 8: shifted right by 8 * ts[5:3].\n    reg signed [63:0] r8;\n    // Stage 9: shifted right by ts[2:0].\n    reg signed [63:0] r9;\n    // Rounding constant for stage 7 (ts is at least 1).\n    wire signed [63:0] rc6 = 64'sd1 <<< (sd[6][30:24] - 7'd1);\n    // Stage 10 sum with the zero point (combinational view of r9).\n    wire signed [63:0] s9 = r9 + $signed({{56{sd[9][23]}}, sd[9][23:16]});\n    // The sum fits in int8.\n    wire               fits8 = (s9[63:7] == {57{s9[63]}});\n    // Clamp tests for values inside int8 range.\n    wire               below = $signed(s9[7:0]) < $signed(sd[9][15:8]);\n    wire               above = $signed(s9[7:0]) > $signed(sd[9][7:0]);\n\n    // Loop index for the side-data shift.\n    integer i;\n    // Pipeline: one stage per clock, all stages advance every clock.\n    always @(posedge clk) begin\n        // Side data enters, then moves down one stage per clock.\n        sd[1] <= {ts_c, zp, act_min, act_max};\n        // Shift the rest.\n        for (i = 2; i <= 9; i = i + 1) sd[i] <= sd[i-1];\n        // Stage 1: magnitude and sign (|-2^31| = 2^31 still fits 32 unsigned bits).\n        a1  <= acc[31] ? (~acc + 32'd1) : acc;\n        // Sign.\n        sg1 <= acc[31];\n        // Multiplier.\n        m1  <= mult;\n        // Stage 2: the four 16x16 unsigned products.\n        pa2 <= a1[15:0]  * m1[15:0];\n        pb2 <= a1[15:0]  * m1[31:16];\n        pc2 <= a1[31:16] * m1[15:0];\n        pd2 <= a1[31:16] * m1[31:16];\n        // Sign moves on.\n        sg2 <= sg1;\n        // Stage 3: add the two middle products; pass the others.\n        m3  <= {1'b0, pb2} + {1'b0, pc2};\n        pa3 <= pa2;\n        pd3 <= pd2;\n        sg3 <= sg2;\n        // Stage 4: low product plus the middle product shifted by 16.\n        t4  <= {32'd0, pa3} + ({31'd0, m3} << 16);\n        pd4 <= pd3;\n        sg4 <= sg3;\n        // Stage 5: add the high product shifted by 32.\n        p5  <= t4 + ({32'd0, pd4} << 32);\n        sg5 <= sg4;\n        // Stage 6: restore the sign.\n        q6  <= sg5 ? -$signed(p5) : $signed(p5);\n        // Stage 7: rounding constant.\n        r7  <= q6 + rc6;\n        // Stage 8: coarse arithmetic shift by 0, 8, ... 56.\n        r8  <= r7 >>> {sd[7][29:27], 3'b000};\n        // Stage 9: fine arithmetic shift by 0 .. 7.\n        r9  <= r8 >>> sd[8][26:24];\n        // Valid bits march through; reset clears them.\n        v   <= rst ? 9'd0 : {v[7:0], start};\n        // Stage 10: zero point, clamp, report.\n        done <= v[8] & ~rst;\n        // Far below or below the low limit.\n        if ((!fits8 && s9[63]) || (fits8 && below))       y <= $signed(sd[9][15:8]);\n        // Far above or above the high limit.\n        else if ((!fits8 && !s9[63]) || (fits8 && above)) y <= $signed(sd[9][7:0]);\n        // In range.\n        else                                               y <= s9[7:0];\n    end\n\nendmodule\n\n`default_nettype wire\n",
+  "tmf_rq.v": "// tmf_rq.v - requantiser selector: one interface, two implementations (parameter MODE).\n//   MODE 0: tmf_requant.v       bit-serial, no multiplier, about 38 + ts/8 + ts%8 clocks per result, one at a time\n//   MODE 1: tmf_requant_pipe.v  four 17x17 multipliers, fixed latency, one result per clock\n// Both give identical results for every input (the testbench tb_requant.v checks that).\n// Issue a result with `start` while `ready` is high; `done` pulses when `y` is valid. Results come out in order.\n\n`default_nettype none\n\nmodule tmf_rq #(\n    parameter MODE = 0                   // 0 serial (smallest), 1 pipelined (fastest)\n) (\n    input  wire               clk,       // clock\n    input  wire               rst,       // synchronous reset, active high\n    input  wire               start,     // issue one operand set (only while ready)\n    input  wire signed [31:0] acc,       // int32 accumulator\n    input  wire        [31:0] mult,      // fixed-point multiplier\n    input  wire signed [7:0]  shift,     // TFLite shift\n    input  wire signed [7:0]  zp,        // output zero point\n    input  wire signed [7:0]  act_min,   // clamp low\n    input  wire signed [7:0]  act_max,   // clamp high\n    output wire               ready,     // a new operand set can be issued\n    output wire               done,      // result valid this clock\n    output wire signed [7:0]  y          // int8 result\n);\n\n    // Pick the implementation at elaboration time.\n    generate\n        if (MODE == 0) begin : g_serial\n            // This contains the instantiation for the serial requantiser\n            tmf_requant u_rq (.clk(clk), .rst(rst), .start(start), .acc(acc), .mult(mult), .shift(shift), .zp(zp),\n                              .act_min(act_min), .act_max(act_max), .ready(ready), .done(done), .y(y));\n        end else begin : g_pipe\n            // This contains the instantiation for the pipelined requantiser\n            tmf_requant_pipe u_rq (.clk(clk), .rst(rst), .start(start), .acc(acc), .mult(mult), .shift(shift), .zp(zp),\n                                   .act_min(act_min), .act_max(act_max), .ready(ready), .done(done), .y(y));\n        end\n    endgenerate\n\nendmodule\n\n`default_nettype wire\n",
+  "uart_bus.v": "// uart_bus.v - UART-to-byte-bus bridge: lets a PC drive tmf_engine (or any byte-bus peripheral).\n// Frame format:\n//   byte 0 : CMD   bit7 = 1 read / 0 write, bits[6:0] = number of bytes - 1\n//   byte 1 : address [15:8]       byte 2 : address [7:0]\n//   write  : n data bytes follow; after the last one is committed the bridge sends 0x55\n//   read   : the bridge sends n data bytes\n// The address auto-increments. Bus timing (see tmf_engine.v): the address is held for\n// two clocks before the one-clock read strobe, and read data is sampled in the strobe clock.\n// A frame that stalls for TIMEOUT clocks is dropped, so a confused host can always resynchronise.\n\n`default_nettype none\n\nmodule uart_bus #(\n    parameter CLKS_PER_BIT = 868,             // clock / baud\n    parameter TIMEOUT      = 1000000          // clocks of silence that abort a frame\n) (\n    input  wire        clk,                   // clock\n    input  wire        rst,                   // synchronous reset, active high\n    input  wire        rx,                    // UART input from the host\n    output wire        tx,                    // UART output to the host\n    output reg  [15:0] bus_addr,              // byte address\n    output reg         bus_wr,                // write strobe\n    output reg  [7:0]  bus_wdata,             // write data\n    output reg         bus_rd,                // read strobe\n    input  wire [7:0]  bus_rdata              // read data\n);\n\n    // Bridge states.\n    localparam [3:0] B_CMD = 4'd0, B_AH = 4'd1, B_AL = 4'd2, B_WD = 4'd3, B_WACK = 4'd4,\n                     B_RSET = 4'd5, B_RSTB = 4'd6, B_RSEND = 4'd7, B_RWAIT = 4'd8;\n    // Width of the timeout counter.\n    localparam TW = $clog2(TIMEOUT + 1);\n\n    // Received byte.\n    wire [7:0] rx_data;\n    // Received byte strobe.\n    wire       rx_valid;\n    // Transmitter busy.\n    wire       tx_busy;\n    // Byte to send.\n    reg  [7:0] tx_data;\n    // Send strobe.\n    reg        tx_send;\n    // State.\n    reg  [3:0] st;\n    // Frame is a read.\n    reg        is_rd;\n    // Bytes left after the current one.\n    reg  [6:0] left;\n    // Wait counter for the read address setup.\n    reg  [1:0] wt;\n    // Silence counter for the frame timeout.\n    reg  [TW-1:0] idle;\n\n    // This contains the instantiation for u_rx\n    uart_rx #(.CLKS_PER_BIT(CLKS_PER_BIT)) u_rx (.clk(clk), .rst(rst), .rx(rx), .data(rx_data), .valid(rx_valid));\n    // This contains the instantiation for u_tx\n    uart_tx #(.CLKS_PER_BIT(CLKS_PER_BIT)) u_tx (.clk(clk), .rst(rst), .data(tx_data), .send(tx_send), .tx(tx), .busy(tx_busy));\n\n    // Frame decoder and bus master.\n    always @(posedge clk) begin\n        // Write strobe defaults low.\n        bus_wr  <= 1'b0;\n        // Read strobe defaults low.\n        bus_rd  <= 1'b0;\n        // Send strobe defaults low.\n        tx_send <= 1'b0;\n        // Silence counter: cleared by traffic, counts while a frame is open.\n        idle    <= (rx_valid || st == B_CMD) ? {TW{1'b0}} : idle + 1'b1;\n        // Reset, or a stalled frame: back to waiting for a command.\n        if (rst || idle == TIMEOUT) begin\n            // Wait for a command byte.\n            st <= B_CMD;\n        end else begin\n            // State dispatch.\n            case (st)\n                // Command byte.\n                B_CMD: if (rx_valid) begin\n                    // Direction.\n                    is_rd <= rx_data[7];\n                    // Count minus one.\n                    left  <= rx_data[6:0];\n                    // Address high next.\n                    st    <= B_AH;\n                end\n                // Address high byte.\n                B_AH: if (rx_valid) begin\n                    // Store it.\n                    bus_addr[15:8] <= rx_data;\n                    // Address low next.\n                    st <= B_AL;\n                end\n                // Address low byte.\n                B_AL: if (rx_valid) begin\n                    // Store it.\n                    bus_addr[7:0] <= rx_data;\n                    // Read: set up the first address; write: receive data.\n                    st <= is_rd ? B_RSET : B_WD;\n                    // Address setup counter.\n                    wt <= 2'd0;\n                end\n                // Each received data byte is one bus write.\n                B_WD: if (rx_valid) begin\n                    // Data.\n                    bus_wdata <= rx_data;\n                    // Strobe next clock edge (address and data are registered together).\n                    bus_wr    <= 1'b1;\n                    // Last byte: acknowledge, else advance.\n                    if (left == 7'd0) st <= B_WACK;\n                    else left <= left - 7'd1;\n                end else if (bus_wr) begin\n                    // Advance the address after the strobe.\n                    bus_addr <= bus_addr + 16'd1;\n                end\n                // Send the write acknowledge once the last strobe has happened.\n                B_WACK: if (!bus_wr && !tx_busy) begin\n                    // Acknowledge byte.\n                    tx_data <= 8'h55;\n                    // Send it.\n                    tx_send <= 1'b1;\n                    // Frame complete.\n                    st      <= B_CMD;\n                end\n                // Hold the address two clocks (registered RAM outputs settle).\n                B_RSET: begin\n                    // Count.\n                    wt <= wt + 2'd1;\n                    // Then strobe.\n                    if (wt == 2'd1) st <= B_RSTB;\n                end\n                // Read strobe: data is sampled in this clock.\n                B_RSTB: begin\n                    // Strobe.\n                    bus_rd  <= 1'b1;\n                    // Capture.\n                    tx_data <= bus_rdata;\n                    // Send it.\n                    st      <= B_RSEND;\n                end\n                // Start sending when the transmitter is free.\n                B_RSEND: if (!tx_busy) begin\n                    // Send strobe.\n                    tx_send <= 1'b1;\n                    // Wait for it to be taken.\n                    st      <= B_RWAIT;\n                end\n                // Transmitter accepted the byte (busy rises next clock): next byte or done.\n                B_RWAIT: if (tx_busy) begin\n                    // Last byte sent.\n                    if (left == 7'd0) st <= B_CMD;\n                    else begin\n                        // One fewer.\n                        left     <= left - 7'd1;\n                        // Next address.\n                        bus_addr <= bus_addr + 16'd1;\n                        // Setup counter.\n                        wt       <= 2'd0;\n                        // Set up the next read.\n                        st       <= B_RSET;\n                    end\n                end\n                // Unused encodings recover.\n                default: st <= B_CMD;\n            endcase\n        end\n    end\n\nendmodule\n\n`default_nettype wire\n",
+  "uart_rx.v": "// uart_rx.v - 8N1 UART receiver, samples the middle of each bit.\n\n`default_nettype none\n\nmodule uart_rx #(\n    parameter CLKS_PER_BIT = 868           // clock / baud (100 MHz / 115200)\n) (\n    input  wire       clk,                  // clock\n    input  wire       rst,                  // synchronous reset, active high\n    input  wire       rx,                   // serial input (idle high)\n    output reg  [7:0] data,                 // received byte\n    output reg        valid                 // one-clock pulse: data holds a new byte\n);\n\n    // Width of the bit-time counter.\n    localparam CW = $clog2(CLKS_PER_BIT + 1);\n    // Receiver states.\n    localparam [1:0] R_IDLE = 2'd0, R_START = 2'd1, R_BITS = 2'd2, R_STOP = 2'd3;\n\n    // Two-flop synchroniser for the asynchronous input.\n    reg [1:0]    sy = 2'b11;\n    // State.\n    reg [1:0]    st;\n    // Clock counter within a bit.\n    reg [CW-1:0] cnt;\n    // Bit index.\n    reg [2:0]    bi;\n    // Shift register.\n    reg [7:0]    sh;\n    // Synchronised input.\n    wire         rxs = sy[1];\n\n    // Receiver: wait for the start edge, check the start bit in its middle, then sample 8 bits and the stop bit.\n    always @(posedge clk) begin\n        // Shift the input through the synchroniser.\n        sy    <= {sy[0], rx};\n        // valid is a single-clock pulse.\n        valid <= 1'b0;\n        // Reset to idle.\n        if (rst) begin\n            // Idle.\n            st <= R_IDLE;\n        end else begin\n            // State dispatch.\n            case (st)\n                // Line idle: a low level is a start bit.\n                R_IDLE: if (!rxs) begin\n                    // Count to the middle of the start bit.\n                    cnt <= 0;\n                    // Next state.\n                    st  <= R_START;\n                end\n                // Middle of the start bit: still low means a real start.\n                R_START: if (cnt == CLKS_PER_BIT / 2) begin\n                    // Restart the bit counter.\n                    cnt <= 0;\n                    // First data bit.\n                    bi  <= 3'd0;\n                    // Glitch: back to idle; real start: receive bits.\n                    st  <= rxs ? R_IDLE : R_BITS;\n                end else cnt <= cnt + 1'b1;\n                // One full bit time later sample the next data bit (LSB first).\n                R_BITS: if (cnt == CLKS_PER_BIT - 1) begin\n                    // Restart the bit counter.\n                    cnt <= 0;\n                    // Shift the bit in at the top.\n                    sh  <= {rxs, sh[7:1]};\n                    // Count bits.\n                    bi  <= bi + 3'd1;\n                    // After bit 7 check the stop bit.\n                    if (bi == 3'd7) st <= R_STOP;\n                end else cnt <= cnt + 1'b1;\n                // Stop bit: report the byte if it is high.\n                R_STOP: if (cnt == CLKS_PER_BIT - 1) begin\n                    // Output the byte.\n                    data  <= sh;\n                    // Valid only with a proper stop bit.\n                    valid <= rxs;\n                    // Back to idle.\n                    st    <= R_IDLE;\n                end else cnt <= cnt + 1'b1;\n            endcase\n        end\n    end\n\nendmodule\n\n`default_nettype wire\n",
+  "uart_tx.v": "// uart_tx.v - 8N1 UART transmitter.\n\n`default_nettype none\n\nmodule uart_tx #(\n    parameter CLKS_PER_BIT = 868           // clock / baud (100 MHz / 115200)\n) (\n    input  wire       clk,                  // clock\n    input  wire       rst,                  // synchronous reset, active high\n    input  wire [7:0] data,                 // byte to send\n    input  wire       send,                 // one-clock pulse: start sending data (ignored while busy)\n    output reg        tx,                   // serial output (idle high)\n    output wire       busy                  // high while a byte is being sent\n);\n\n    // Width of the bit-time counter.\n    localparam CW = $clog2(CLKS_PER_BIT + 1);\n\n    // Frame shift register: stop bit, 8 data bits, start bit (sent LSB first).\n    reg [9:0]    sh;\n    // Bits left to send.\n    reg [3:0]    left;\n    // Clock counter within a bit.\n    reg [CW-1:0] cnt;\n\n    // Busy while bits remain.\n    assign busy = (left != 4'd0);\n\n    // Transmitter: load a 10-bit frame and shift one bit out per bit time.\n    always @(posedge clk) begin\n        // Reset to idle.\n        if (rst) begin\n            // Line idle high.\n            tx   <= 1'b1;\n            // Nothing to send.\n            left <= 4'd0;\n        end else if (!busy) begin\n            // Line idle high.\n            tx <= 1'b1;\n            // New byte to send.\n            if (send) begin\n                // Stop bit, data, start bit.\n                sh   <= {1'b1, data, 1'b0};\n                // Ten bits.\n                left <= 4'd10;\n                // Fresh bit time.\n                cnt  <= 0;\n            end\n        end else begin\n            // Current bit on the line.\n            tx <= sh[0];\n            // End of the bit time.\n            if (cnt == CLKS_PER_BIT - 1) begin\n                // Restart the counter.\n                cnt  <= 0;\n                // Next bit.\n                sh   <= {1'b1, sh[9:1]};\n                // One fewer.\n                left <= left - 4'd1;\n            end else cnt <= cnt + 1'b1;\n        end\n    end\n\nendmodule\n\n`default_nettype wire\n"
+ },
+ "validation": {
+  "max_abs_error_pct": 4.8,
+  "mean_abs_error_pct": 1.8,
+  "points": [
+   {
+    "config": {
+     "bus": "uart",
+     "features": [
+      "HAS_QUEUE",
+      "HAS_CB"
+     ],
+     "lanes": 4,
+     "rq": 0
+    },
+    "error_pct": 0.0,
+    "measured": 3406,
+    "predicted": 3406
+   },
+   {
+    "config": {
+     "bus": "uart",
+     "features": [
+      "HAS_WIN",
+      "HAS_CB"
+     ],
+     "lanes": 4,
+     "rq": 1
+    },
+    "error_pct": -1.3,
+    "measured": 4546,
+    "predicted": 4485
+   },
+   {
+    "config": {
+     "bus": "uart",
+     "features": [
+      "HAS_QUEUE",
+      "HAS_CB"
+     ],
+     "lanes": 4,
+     "rq": 0
+    },
+    "error_pct": 0.0,
+    "measured": 3406,
+    "predicted": 3406
+   },
+   {
+    "config": {
+     "bus": "uart",
+     "features": [
+      "HAS_QUEUE",
+      "HAS_PERF",
+      "HAS_WIN",
+      "HAS_FUSE",
+      "HAS_W4",
+      "HAS_CB"
+     ],
+     "lanes": 4,
+     "rq": 1
+    },
+    "error_pct": -4.7,
+    "measured": 4900,
+    "predicted": 4670
+   },
+   {
+    "config": {
+     "bus": "uart",
+     "features": [
+      "HAS_QUEUE",
+      "HAS_PERF",
+      "HAS_FUSE"
+     ],
+     "lanes": 2,
+     "rq": 0
+    },
+    "error_pct": -3.2,
+    "measured": 2674,
+    "predicted": 2589
+   },
+   {
+    "config": {
+     "bus": "uart",
+     "features": [
+      "HAS_QUEUE",
+      "HAS_FUSE"
+     ],
+     "lanes": 2,
+     "rq": 1
+    },
+    "error_pct": -0.4,
+    "measured": 2776,
+    "predicted": 2766
+   },
+   {
+    "config": {
+     "bus": "uart",
+     "features": [
+      "HAS_QUEUE",
+      "HAS_WIN",
+      "HAS_FUSE",
+      "HAS_CB"
+     ],
+     "lanes": 2,
+     "rq": 1
+    },
+    "error_pct": -2.8,
+    "measured": 4129,
+    "predicted": 4014
+   },
+   {
+    "config": {
+     "bus": "uart",
+     "features": [
+      "HAS_QUEUE",
+      "HAS_CB"
+     ],
+     "lanes": 2,
+     "rq": 1
+    },
+    "error_pct": -0.2,
+    "measured": 3251,
+    "predicted": 3243
+   },
+   {
+    "config": {
+     "bus": "uart",
+     "features": [
+      "HAS_QUEUE",
+      "HAS_PERF",
+      "HAS_WIN",
+      "HAS_FUSE",
+      "HAS_W4"
+     ],
+     "lanes": 2,
+     "rq": 1
+    },
+    "error_pct": -4.1,
+    "measured": 4019,
+    "predicted": 3855
+   },
+   {
+    "config": {
+     "bus": "uart",
+     "features": [
+      "HAS_PERF",
+      "HAS_FUSE",
+      "HAS_CB"
+     ],
+     "lanes": 1,
+     "rq": 0
+    },
+    "error_pct": -2.0,
+    "measured": 2647,
+    "predicted": 2594
+   },
+   {
+    "config": {
+     "bus": "uart",
+     "features": [
+      "HAS_QUEUE",
+      "HAS_PERF",
+      "HAS_WIN",
+      "HAS_W4"
+     ],
+     "lanes": 1,
+     "rq": 0
+    },
+    "error_pct": 0.6,
+    "measured": 3342,
+    "predicted": 3362
+   },
+   {
+    "config": {
+     "bus": "uart",
+     "features": [
+      "HAS_FUSE",
+      "HAS_CB"
+     ],
+     "lanes": 1,
+     "rq": 0
+    },
+    "error_pct": 0.0,
+    "measured": 2390,
+    "predicted": 2390
+   },
+   {
+    "config": {
+     "bus": "uart",
+     "features": [
+      "HAS_WIN",
+      "HAS_CB"
+     ],
+     "lanes": 1,
+     "rq": 0
+    },
+    "error_pct": 0.0,
+    "measured": 3203,
+    "predicted": 3203
+   },
+   {
+    "config": {
+     "bus": "uart",
+     "features": [
+      "HAS_QUEUE",
+      "HAS_WIN",
+      "HAS_FUSE",
+      "HAS_W4",
+      "HAS_CB"
+     ],
+     "lanes": 1,
+     "rq": 0
+    },
+    "error_pct": -4.8,
+    "measured": 3376,
+    "predicted": 3213
+   },
+   {
+    "config": {
+     "bus": "uart",
+     "features": [
+      "HAS_PERF",
+      "HAS_WIN",
+      "HAS_FUSE"
+     ],
+     "lanes": 1,
+     "rq": 1
+    },
+    "error_pct": -1.2,
+    "measured": 3666,
+    "predicted": 3623
+   },
+   {
+    "config": {
+     "bus": "uart",
+     "features": [
+      "HAS_QUEUE",
+      "HAS_PERF",
+      "HAS_WIN",
+      "HAS_FUSE",
+      "HAS_CB"
+     ],
+     "lanes": 1,
+     "rq": 0
+    },
+    "error_pct": -2.7,
+    "measured": 3578,
+    "predicted": 3480
+   },
+   {
+    "config": {
+     "bus": "uart",
+     "features": [
+      "HAS_QUEUE",
+      "HAS_PERF"
+     ],
+     "lanes": 1,
+     "rq": 0
+    },
+    "error_pct": -0.3,
+    "measured": 2434,
+    "predicted": 2426
+   },
+   {
+    "config": {
+     "bus": "uart",
+     "features": [
+      "HAS_QUEUE",
+      "HAS_PERF",
+      "HAS_WIN",
+      "HAS_FUSE",
+      "HAS_W4",
+      "HAS_CB"
+     ],
+     "lanes": 1,
+     "rq": 1
+    },
+    "error_pct": -4.0,
+    "measured": 4101,
+    "predicted": 3937
+   }
+  ]
+ },
+ "version": "0.9.0"
+}

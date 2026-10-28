@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tinyml-fpga"
-version = "0.8.0"
+version = "0.9.0"
 description = "Run int8 TensorFlow Lite models with conv/depthwise/dense layers on an FPGA (any board: UART bridge included, or your own link)"
 readme = "README.md"
 requires-python = ">=3.9"

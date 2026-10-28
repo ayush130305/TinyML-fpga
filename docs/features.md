@@ -129,3 +129,11 @@ m = tinyml_fpga.load("m.tmf", backend=tinyml_fpga.HwEngine(McuSpiBus(spi, cs))) 
 Verification: `rtl/sim/tb_bus.v` replays a recorded inference of `m_cnn` through each bridge on a plain engine and on a fully featured one (2 lanes, pipelined requantiser, queue, window, fusion) and checks every byte read back. `tests/test_buses.py` checks the Python classes against Python models of the frame rules, including a full model run on each.
 
 Cost (bridge only, Yosys LUT4): UART 194, SPI 88, I2C 104, AXI4-Lite 125.
+
+## v0.9: LUT-budget configurator
+
+`python -m tinyml_fpga configure --budget 8k --bus spi --features win,fuse,w4 --out pkg.zip` checks a feature selection against a logic-element budget and writes a package (`rtl/` with only the needed files and the chosen parameters as defaults, `config.json`, `README.md`). `--suggest` picks the fastest configuration that fits (required features via `--features`). The same algorithm runs as a static page, `docs/index.html` (GitHub Pages, branch `main`, folder `/docs`), built by `tools/build_site.py`; `tools/crosscheck.py` verifies that Python and JavaScript give identical estimates, files and suggestions.
+
+How the numbers are made: `tools/sweep.py` synthesises the engine with Yosys (iCE40 flow) for every lane count and requantiser, every feature alone, all feature pairs (1 and 4 lanes) and the four bus bridges; `tools/build_spec.py` fits `base + sum(feature deltas) + pair corrections`, scales Yosys LUT4 to Efinity logic elements with the factor in `tools/calibration.json` (one measured design), and writes `configurator/spec.json`. On 18 configurations kept out of the fit the model is within 1.8% on average and 4.8% at worst (it under-estimates large feature mixes), which is why "fits" means at most 85% of the budget.
+
+"Trimmed" means unused files are left out and unused features are parameters set to 0, which synthesis removes completely; the RTL text is not edited. Every bus/requantiser combination of the generated files is elaborated in `tests/test_configure.py`.

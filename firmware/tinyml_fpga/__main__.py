@@ -3,6 +3,7 @@
 #   python -m tinyml_fpga info    model.tmf [--sizes W X Y P] ops, sizes, where each op runs
 #   python -m tinyml_fpga check   model.tflite [--n 50]       bit-exact comparison with LiteRT
 #   python -m tinyml_fpga deploy  [model.tmf ...] [--port P]  copy the runtime (and models) to a MicroPython MCU
+#   python -m tinyml_fpga configure --budget 8k [--suggest | --lanes N --features a,b] [--bus B] [--out pkg.zip]
 
 import argparse
 import os
@@ -129,6 +130,17 @@ def main():
     d = sub.add_parser("deploy", help="copy the runtime (and models) to a MicroPython board with mpremote")
     d.add_argument("models", nargs="*"); d.add_argument("--port")
     d.set_defaults(fn=cmd_deploy)
+    # configure.
+    g = sub.add_parser("configure", help="check features against a LUT budget and generate an RTL package")
+    g.add_argument("--budget", required=True, help="logic elements available, e.g. 4k or 8k")
+    g.add_argument("--bus", default="uart", choices=("uart", "spi", "i2c", "axil"))
+    g.add_argument("--lanes", type=int, default=1, choices=(1, 2, 4, 8))
+    g.add_argument("--pipelined", action="store_true", help="pipelined requantiser (4 multipliers)")
+    g.add_argument("--features", help="comma list: queue,perf,win,fuse,w4,cb")
+    g.add_argument("--suggest", action="store_true", help="pick the fastest configuration that fits (honours --features as required)")
+    g.add_argument("--no-dsp", action="store_true", help="the device has no multiplier blocks: count them as LUTs")
+    g.add_argument("--out", help="write the package zip here")
+    g.set_defaults(fn=lambda a: sys.exit(__import__("tinyml_fpga.configure", fromlist=["main"]).main(a)))
     # Run.
     a = ap.parse_args()
     a.fn(a)

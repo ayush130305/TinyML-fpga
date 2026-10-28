@@ -1,0 +1,1310 @@
+[
+ {
+  "kind": "base",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 8,
+   "RQ_MODE": 0
+  },
+  "lut4": 3396,
+  "lut4_nodsp": 4796,
+  "carry": 936,
+  "ff": 2427,
+  "dsp": 8,
+  "ram4k": 19
+ },
+ {
+  "kind": "base",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 8,
+   "RQ_MODE": 1
+  },
+  "lut4": 3816,
+  "lut4_nodsp": 7860,
+  "carry": 1271,
+  "ff": 3196,
+  "dsp": 12,
+  "ram4k": 19
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 8,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1
+  },
+  "lut4": 3535,
+  "lut4_nodsp": 4935,
+  "carry": 974,
+  "ff": 2446,
+  "dsp": 8,
+  "ram4k": 20
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 8,
+   "RQ_MODE": 0,
+   "HAS_PERF": 1
+  },
+  "lut4": 3646,
+  "lut4_nodsp": 5046,
+  "carry": 1056,
+  "ff": 2555,
+  "dsp": 8,
+  "ram4k": 19
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 8,
+   "RQ_MODE": 0,
+   "HAS_WIN": 1
+  },
+  "lut4": 4255,
+  "lut4_nodsp": 5655,
+  "carry": 1231,
+  "ff": 2846,
+  "dsp": 8,
+  "ram4k": 19
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 8,
+   "RQ_MODE": 0,
+   "HAS_FUSE": 1
+  },
+  "lut4": 3432,
+  "lut4_nodsp": 4832,
+  "carry": 938,
+  "ff": 2456,
+  "dsp": 8,
+  "ram4k": 19
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 8,
+   "RQ_MODE": 0,
+   "HAS_W4": 1
+  },
+  "lut4": 3518,
+  "lut4_nodsp": 4918,
+  "carry": 952,
+  "ff": 2428,
+  "dsp": 8,
+  "ram4k": 19
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 8,
+   "RQ_MODE": 0,
+   "HAS_CB": 1
+  },
+  "lut4": 4860,
+  "lut4_nodsp": 6260,
+  "carry": 1018,
+  "ff": 2557,
+  "dsp": 8,
+  "ram4k": 19
+ },
+ {
+  "kind": "base",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0
+  },
+  "lut4": 2645,
+  "lut4_nodsp": 3345,
+  "carry": 764,
+  "ff": 1643,
+  "dsp": 4,
+  "ram4k": 15
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1
+  },
+  "lut4": 2762,
+  "lut4_nodsp": 3462,
+  "carry": 802,
+  "ff": 1662,
+  "dsp": 4,
+  "ram4k": 16
+ },
+ {
+  "kind": "base",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 1
+  },
+  "lut4": 3044,
+  "lut4_nodsp": 6388,
+  "carry": 1100,
+  "ff": 2412,
+  "dsp": 8,
+  "ram4k": 15
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_PERF": 1
+  },
+  "lut4": 2898,
+  "lut4_nodsp": 3598,
+  "carry": 885,
+  "ff": 1771,
+  "dsp": 4,
+  "ram4k": 15
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_WIN": 1
+  },
+  "lut4": 3468,
+  "lut4_nodsp": 4168,
+  "carry": 1059,
+  "ff": 2062,
+  "dsp": 4,
+  "ram4k": 15
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_FUSE": 1
+  },
+  "lut4": 2649,
+  "lut4_nodsp": 3349,
+  "carry": 766,
+  "ff": 1673,
+  "dsp": 4,
+  "ram4k": 15
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_W4": 1
+  },
+  "lut4": 2696,
+  "lut4_nodsp": 3396,
+  "carry": 780,
+  "ff": 1644,
+  "dsp": 4,
+  "ram4k": 15
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_CB": 1
+  },
+  "lut4": 3465,
+  "lut4_nodsp": 4165,
+  "carry": 847,
+  "ff": 1773,
+  "dsp": 4,
+  "ram4k": 15
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1,
+   "HAS_PERF": 1
+  },
+  "lut4": 2998,
+  "lut4_nodsp": 3698,
+  "carry": 922,
+  "ff": 1790,
+  "dsp": 4,
+  "ram4k": 16
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1,
+   "HAS_WIN": 1
+  },
+  "lut4": 3627,
+  "lut4_nodsp": 4327,
+  "carry": 1098,
+  "ff": 2081,
+  "dsp": 4,
+  "ram4k": 16
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1,
+   "HAS_FUSE": 1
+  },
+  "lut4": 2755,
+  "lut4_nodsp": 3455,
+  "carry": 797,
+  "ff": 1692,
+  "dsp": 4,
+  "ram4k": 16
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1,
+   "HAS_W4": 1
+  },
+  "lut4": 2834,
+  "lut4_nodsp": 3534,
+  "carry": 818,
+  "ff": 1663,
+  "dsp": 4,
+  "ram4k": 16
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 3406,
+  "lut4_nodsp": 4106,
+  "carry": 902,
+  "ff": 1792,
+  "dsp": 4,
+  "ram4k": 16
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_PERF": 1,
+   "HAS_WIN": 1
+  },
+  "lut4": 3704,
+  "lut4_nodsp": 4404,
+  "carry": 1179,
+  "ff": 2190,
+  "dsp": 4,
+  "ram4k": 15
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_PERF": 1,
+   "HAS_FUSE": 1
+  },
+  "lut4": 2865,
+  "lut4_nodsp": 3565,
+  "carry": 879,
+  "ff": 1801,
+  "dsp": 4,
+  "ram4k": 15
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_PERF": 1,
+   "HAS_W4": 1
+  },
+  "lut4": 2962,
+  "lut4_nodsp": 3662,
+  "carry": 900,
+  "ff": 1772,
+  "dsp": 4,
+  "ram4k": 15
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_PERF": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 3687,
+  "lut4_nodsp": 4387,
+  "carry": 984,
+  "ff": 1901,
+  "dsp": 4,
+  "ram4k": 15
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_WIN": 1,
+   "HAS_FUSE": 1
+  },
+  "lut4": 3471,
+  "lut4_nodsp": 4171,
+  "carry": 1054,
+  "ff": 2092,
+  "dsp": 4,
+  "ram4k": 15
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_WIN": 1,
+   "HAS_W4": 1
+  },
+  "lut4": 3555,
+  "lut4_nodsp": 4255,
+  "carry": 1075,
+  "ff": 2063,
+  "dsp": 4,
+  "ram4k": 15
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_FUSE": 1,
+   "HAS_W4": 1
+  },
+  "lut4": 2701,
+  "lut4_nodsp": 3401,
+  "carry": 775,
+  "ff": 1674,
+  "dsp": 4,
+  "ram4k": 15
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_WIN": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 4086,
+  "lut4_nodsp": 4786,
+  "carry": 1159,
+  "ff": 2192,
+  "dsp": 4,
+  "ram4k": 15
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_FUSE": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 3448,
+  "lut4_nodsp": 4148,
+  "carry": 859,
+  "ff": 1803,
+  "dsp": 4,
+  "ram4k": 15
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_W4": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 3474,
+  "lut4_nodsp": 4174,
+  "carry": 864,
+  "ff": 1773,
+  "dsp": 4,
+  "ram4k": 15
+ },
+ {
+  "kind": "random",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 3406,
+  "lut4_nodsp": 4106,
+  "carry": 902,
+  "ff": 1792,
+  "dsp": 4,
+  "ram4k": 16
+ },
+ {
+  "kind": "random",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 1,
+   "HAS_WIN": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 4546,
+  "lut4_nodsp": 7890,
+  "carry": 1494,
+  "ff": 2961,
+  "dsp": 8,
+  "ram4k": 15
+ },
+ {
+  "kind": "random",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 3406,
+  "lut4_nodsp": 4106,
+  "carry": 902,
+  "ff": 1792,
+  "dsp": 4,
+  "ram4k": 16
+ },
+ {
+  "kind": "base",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 2,
+   "RQ_MODE": 0
+  },
+  "lut4": 2264,
+  "lut4_nodsp": 2614,
+  "carry": 678,
+  "ff": 1252,
+  "dsp": 2,
+  "ram4k": 13
+ },
+ {
+  "kind": "all",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 4,
+   "RQ_MODE": 1,
+   "HAS_QUEUE": 1,
+   "HAS_PERF": 1,
+   "HAS_WIN": 1,
+   "HAS_FUSE": 1,
+   "HAS_W4": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 4900,
+  "lut4_nodsp": 8244,
+  "carry": 1631,
+  "ff": 3138,
+  "dsp": 8,
+  "ram4k": 16
+ },
+ {
+  "kind": "base",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 2,
+   "RQ_MODE": 1
+  },
+  "lut4": 2654,
+  "lut4_nodsp": 5648,
+  "carry": 1013,
+  "ff": 2021,
+  "dsp": 6,
+  "ram4k": 13
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 2,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1
+  },
+  "lut4": 2394,
+  "lut4_nodsp": 2744,
+  "carry": 716,
+  "ff": 1271,
+  "dsp": 2,
+  "ram4k": 14
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 2,
+   "RQ_MODE": 0,
+   "HAS_PERF": 1
+  },
+  "lut4": 2509,
+  "lut4_nodsp": 2859,
+  "carry": 798,
+  "ff": 1380,
+  "dsp": 2,
+  "ram4k": 13
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 2,
+   "RQ_MODE": 0,
+   "HAS_WIN": 1
+  },
+  "lut4": 3109,
+  "lut4_nodsp": 3459,
+  "carry": 973,
+  "ff": 1671,
+  "dsp": 2,
+  "ram4k": 13
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 2,
+   "RQ_MODE": 0,
+   "HAS_FUSE": 1
+  },
+  "lut4": 2287,
+  "lut4_nodsp": 2637,
+  "carry": 680,
+  "ff": 1282,
+  "dsp": 2,
+  "ram4k": 13
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 2,
+   "RQ_MODE": 0,
+   "HAS_W4": 1
+  },
+  "lut4": 2317,
+  "lut4_nodsp": 2667,
+  "carry": 694,
+  "ff": 1253,
+  "dsp": 2,
+  "ram4k": 13
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 2,
+   "RQ_MODE": 0,
+   "HAS_CB": 1
+  },
+  "lut4": 2755,
+  "lut4_nodsp": 3105,
+  "carry": 762,
+  "ff": 1382,
+  "dsp": 2,
+  "ram4k": 13
+ },
+ {
+  "kind": "random",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 2,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1,
+   "HAS_PERF": 1,
+   "HAS_FUSE": 1
+  },
+  "lut4": 2674,
+  "lut4_nodsp": 3024,
+  "carry": 838,
+  "ff": 1429,
+  "dsp": 2,
+  "ram4k": 14
+ },
+ {
+  "kind": "random",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 2,
+   "RQ_MODE": 1,
+   "HAS_QUEUE": 1,
+   "HAS_FUSE": 1
+  },
+  "lut4": 2776,
+  "lut4_nodsp": 5770,
+  "carry": 1046,
+  "ff": 2070,
+  "dsp": 6,
+  "ram4k": 14
+ },
+ {
+  "kind": "random",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 2,
+   "RQ_MODE": 1,
+   "HAS_QUEUE": 1,
+   "HAS_WIN": 1,
+   "HAS_FUSE": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 4129,
+  "lut4_nodsp": 7123,
+  "carry": 1443,
+  "ff": 2619,
+  "dsp": 6,
+  "ram4k": 14
+ },
+ {
+  "kind": "random",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 2,
+   "RQ_MODE": 1,
+   "HAS_QUEUE": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 3251,
+  "lut4_nodsp": 6245,
+  "carry": 1157,
+  "ff": 2170,
+  "dsp": 6,
+  "ram4k": 14
+ },
+ {
+  "kind": "base",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0
+  },
+  "lut4": 2062,
+  "lut4_nodsp": 2237,
+  "carry": 635,
+  "ff": 1058,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "random",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 2,
+   "RQ_MODE": 1,
+   "HAS_QUEUE": 1,
+   "HAS_PERF": 1,
+   "HAS_WIN": 1,
+   "HAS_FUSE": 1,
+   "HAS_W4": 1
+  },
+  "lut4": 4019,
+  "lut4_nodsp": 7013,
+  "carry": 1486,
+  "ff": 2618,
+  "dsp": 6,
+  "ram4k": 14
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1
+  },
+  "lut4": 2190,
+  "lut4_nodsp": 2365,
+  "carry": 673,
+  "ff": 1077,
+  "dsp": 1,
+  "ram4k": 14
+ },
+ {
+  "kind": "base",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 1
+  },
+  "lut4": 2559,
+  "lut4_nodsp": 5378,
+  "carry": 971,
+  "ff": 1827,
+  "dsp": 5,
+  "ram4k": 13
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_PERF": 1
+  },
+  "lut4": 2298,
+  "lut4_nodsp": 2473,
+  "carry": 755,
+  "ff": 1186,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_WIN": 1
+  },
+  "lut4": 2914,
+  "lut4_nodsp": 3089,
+  "carry": 930,
+  "ff": 1477,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_FUSE": 1
+  },
+  "lut4": 2090,
+  "lut4_nodsp": 2265,
+  "carry": 637,
+  "ff": 1088,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_W4": 1
+  },
+  "lut4": 2101,
+  "lut4_nodsp": 2276,
+  "carry": 651,
+  "ff": 1059,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "single",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_CB": 1
+  },
+  "lut4": 2374,
+  "lut4_nodsp": 2549,
+  "carry": 705,
+  "ff": 1188,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1,
+   "HAS_PERF": 1
+  },
+  "lut4": 2434,
+  "lut4_nodsp": 2609,
+  "carry": 793,
+  "ff": 1205,
+  "dsp": 1,
+  "ram4k": 14
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1,
+   "HAS_WIN": 1
+  },
+  "lut4": 3064,
+  "lut4_nodsp": 3239,
+  "carry": 969,
+  "ff": 1496,
+  "dsp": 1,
+  "ram4k": 14
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1,
+   "HAS_FUSE": 1
+  },
+  "lut4": 2177,
+  "lut4_nodsp": 2352,
+  "carry": 668,
+  "ff": 1107,
+  "dsp": 1,
+  "ram4k": 14
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1,
+   "HAS_W4": 1
+  },
+  "lut4": 2231,
+  "lut4_nodsp": 2406,
+  "carry": 689,
+  "ff": 1078,
+  "dsp": 1,
+  "ram4k": 14
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 2470,
+  "lut4_nodsp": 2645,
+  "carry": 743,
+  "ff": 1207,
+  "dsp": 1,
+  "ram4k": 14
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_PERF": 1,
+   "HAS_FUSE": 1
+  },
+  "lut4": 2294,
+  "lut4_nodsp": 2469,
+  "carry": 750,
+  "ff": 1216,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_PERF": 1,
+   "HAS_WIN": 1
+  },
+  "lut4": 3173,
+  "lut4_nodsp": 3348,
+  "carry": 1051,
+  "ff": 1605,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_PERF": 1,
+   "HAS_W4": 1
+  },
+  "lut4": 2345,
+  "lut4_nodsp": 2520,
+  "carry": 771,
+  "ff": 1187,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_PERF": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 2612,
+  "lut4_nodsp": 2787,
+  "carry": 825,
+  "ff": 1316,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_WIN": 1,
+   "HAS_FUSE": 1
+  },
+  "lut4": 2899,
+  "lut4_nodsp": 3074,
+  "carry": 925,
+  "ff": 1507,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_WIN": 1,
+   "HAS_W4": 1
+  },
+  "lut4": 2946,
+  "lut4_nodsp": 3121,
+  "carry": 946,
+  "ff": 1478,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_FUSE": 1,
+   "HAS_W4": 1
+  },
+  "lut4": 2105,
+  "lut4_nodsp": 2280,
+  "carry": 646,
+  "ff": 1089,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_WIN": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 3203,
+  "lut4_nodsp": 3378,
+  "carry": 1017,
+  "ff": 1607,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_FUSE": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 2390,
+  "lut4_nodsp": 2565,
+  "carry": 717,
+  "ff": 1218,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "pair",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_W4": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 2358,
+  "lut4_nodsp": 2533,
+  "carry": 705,
+  "ff": 1188,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "random",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_PERF": 1,
+   "HAS_FUSE": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 2647,
+  "lut4_nodsp": 2822,
+  "carry": 844,
+  "ff": 1346,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "random",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1,
+   "HAS_PERF": 1,
+   "HAS_WIN": 1,
+   "HAS_W4": 1
+  },
+  "lut4": 3342,
+  "lut4_nodsp": 3517,
+  "carry": 1105,
+  "ff": 1625,
+  "dsp": 1,
+  "ram4k": 14
+ },
+ {
+  "kind": "random",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_FUSE": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 2390,
+  "lut4_nodsp": 2565,
+  "carry": 717,
+  "ff": 1218,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "random",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_WIN": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 3203,
+  "lut4_nodsp": 3378,
+  "carry": 1017,
+  "ff": 1607,
+  "dsp": 1,
+  "ram4k": 13
+ },
+ {
+  "kind": "random",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1,
+   "HAS_WIN": 1,
+   "HAS_FUSE": 1,
+   "HAS_W4": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 3376,
+  "lut4_nodsp": 3551,
+  "carry": 1041,
+  "ff": 1656,
+  "dsp": 1,
+  "ram4k": 14
+ },
+ {
+  "kind": "random",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 1,
+   "HAS_PERF": 1,
+   "HAS_WIN": 1,
+   "HAS_FUSE": 1
+  },
+  "lut4": 3666,
+  "lut4_nodsp": 6485,
+  "carry": 1387,
+  "ff": 2404,
+  "dsp": 5,
+  "ram4k": 13
+ },
+ {
+  "kind": "random",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1,
+   "HAS_PERF": 1,
+   "HAS_WIN": 1,
+   "HAS_FUSE": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 3578,
+  "lut4_nodsp": 3753,
+  "carry": 1161,
+  "ff": 1784,
+  "dsp": 1,
+  "ram4k": 14
+ },
+ {
+  "kind": "random",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 0,
+   "HAS_QUEUE": 1,
+   "HAS_PERF": 1
+  },
+  "lut4": 2434,
+  "lut4_nodsp": 2609,
+  "carry": 793,
+  "ff": 1205,
+  "dsp": 1,
+  "ram4k": 14
+ },
+ {
+  "kind": "bridge",
+  "top": "uart_bus",
+  "params": {},
+  "lut4": 187,
+  "lut4_nodsp": 187,
+  "carry": 56,
+  "ff": 134,
+  "dsp": 0,
+  "ram4k": 0
+ },
+ {
+  "kind": "bridge",
+  "top": "spi_bus",
+  "params": {},
+  "lut4": 88,
+  "lut4_nodsp": 88,
+  "carry": 15,
+  "ff": 80,
+  "dsp": 0,
+  "ram4k": 0
+ },
+ {
+  "kind": "bridge",
+  "top": "i2c_bus",
+  "params": {},
+  "lut4": 106,
+  "lut4_nodsp": 106,
+  "carry": 16,
+  "ff": 71,
+  "dsp": 0,
+  "ram4k": 0
+ },
+ {
+  "kind": "bridge",
+  "top": "axil_bus",
+  "params": {},
+  "lut4": 124,
+  "lut4_nodsp": 124,
+  "carry": 1,
+  "ff": 122,
+  "dsp": 0,
+  "ram4k": 0
+ },
+ {
+  "kind": "all",
+  "top": "tmf_engine",
+  "params": {
+   "LANES": 1,
+   "RQ_MODE": 1,
+   "HAS_QUEUE": 1,
+   "HAS_PERF": 1,
+   "HAS_WIN": 1,
+   "HAS_FUSE": 1,
+   "HAS_W4": 1,
+   "HAS_CB": 1
+  },
+  "lut4": 4101,
+  "lut4_nodsp": 6920,
+  "carry": 1507,
+  "ff": 2553,
+  "dsp": 5,
+  "ram4k": 14
+ }
+]
